@@ -6,18 +6,25 @@ void setup_wifi()
   Serial.print("Connecting to ");
   Serial.println(ssid);
 
-  WiFi.setHostname(USER_MQTT_CLIENT_NAME);
-  WiFi.begin(ssid, password);
 
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
+  if (WIFI_AP){
+    WiFi.softAP(USER_MQTT_CLIENT_NAME+"_AP", USER_AP_PASSWORD);
   }
 
-  Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
+  if (WIFI_CONNECT){
+    WiFi.setHostname(USER_MQTT_CLIENT_NAME);
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
+    }
+  
+    Serial.println("");
+    Serial.println("WiFi connected");
+    Serial.println("IP address: ");
+    Serial.println(WiFi.localIP());
+  }
+
 }
 
 void reconnect() 

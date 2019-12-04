@@ -14,14 +14,17 @@
 #include <WebServer.h>
 
 /*******************  User set variables *******************************/
-#define USER_SSID                 "Pilkington_NoT_UP"
-#define USER_PASSWORD             "marvin@4244"
-#define USER_MQTT_SERVER          "192.168.1.3"
+#include "secrets.h" //Has the various usernnames aand files
+/***************************
+ * Contents of Secrets File
+#define USER_SSID                 ""
+#define USER_PASSWORD             ""
+#define USER_MQTT_SERVER          ""
 #define USER_MQTT_PORT            1883
-#define USER_MQTT_USERNAME        "mqtt"
-#define USER_MQTT_PASSWORD        "jedi1234"
+#define USER_MQTT_USERNAME        "t"
+#define USER_MQTT_PASSWORD        ""
 #define USER_MQTT_CLIENT_NAME     "LightMCU"           // Used to define MQTT topics, MQTT Client ID, and ArduinoOTA
-
+ */
 
 #define FIRSTZONE_COLOR_ORDER           GRB                 //Color orders, can be RGB, RBG, GRB, GBR, BRG, BGR 
 #define SECONDZONE_COLOR_ORDER          GRB                 //Color orders, can be RGB, RBG, GRB, GBR, BRG, BGR 
@@ -541,6 +544,11 @@ int maxLEDs = 500;
 int locatorLED = 0;
 char MQTT_locatorLED[50];
 int locatorDelay = 1000;
+
+
+const boolean WIFI_AP = false;
+const boolean WIFI_CONNECT = true;
+
 
 const String TOGGLE = "toggle";
 const String ON = "on";
