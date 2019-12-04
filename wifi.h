@@ -6,16 +6,16 @@ void setup_wifi()
   Serial.print("Connecting to ");
   Serial.println(ssid);
 
-
+  WiFi.persistent(true);
   if (WIFI_AP){
     WiFi.mode(WIFI_AP); //Access Point mode
-    WiFi.softAP(USER_MQTT_CLIENT_NAME+"_AP", USER_AP_PASSWORD);
+    WiFi.softAP(mqtt_client_name+"_AP", apPassword);
     Serial.println("Wifi AP active");
   }
 
-  if (WIFI_CONNECT){
+  if (WIFI_CONNECT){//Check to see if we have a saved config
     WiFi.mode(WIFI_STA); //Connectto your wifi
-    WiFi.setHostname(USER_MQTT_CLIENT_NAME);
+    WiFi.setHostname(mqtt_client_name);
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) {
       delay(500);
@@ -30,6 +30,13 @@ void setup_wifi()
 
 }
 
+void connectToRouter(char *ssid, char *password){
+  Wifi.setConfig(ssid, password);
+  WiFi.setHostname(mqtt_client_name);
+  WiFi.mode(WIFI_STA);
+  wifi.begin();
+}
+
 void reconnect() 
 {
   // Loop until we're reconnected
@@ -41,7 +48,8 @@ void reconnect()
     }
     if(retries > 1500)
     {
-    ESP.restart();
+      Serial.println("Unable to connect to WIFI router");
+      ESP.restart();
     }
   }
 }

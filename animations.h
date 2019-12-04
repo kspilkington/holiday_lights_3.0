@@ -24,6 +24,9 @@ void updateLeds();
 void updateSectionLeds();
 Animation nextAnimation();
 
+void storeAnimationSettings();
+void loadAnimationSettings();
+
 void locator_Move()
 {
   if(effect == "LED_Locator")
@@ -828,3 +831,12 @@ void Locator(LedStrip strip)
 //       }
 //     }
    }
+
+
+void storeAnimationSettings(){
+  //Store the Settings to NVM
+}
+
+void loadAnimationSettings(){
+  //TODO: Load the settings from NVM
+}

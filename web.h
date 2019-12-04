@@ -7,6 +7,7 @@ void setupWeb(){
   webServer.on("/color1",HTTP_POST,[](){
     
   });
+  webServer.begin();
 }
 
   

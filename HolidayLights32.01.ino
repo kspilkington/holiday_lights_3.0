@@ -16,16 +16,17 @@
 
 /*******************  User set variables *******************************/
 #include "secrets.h" //Has the various usernnames aand files
-/***************************
- * Contents of Secrets File
-#define USER_SSID                 ""
-#define USER_PASSWORD             ""
+
+#ifndef USER_SSID
+#define USER_SSID                 "default"
+#define USER_AP_PASSWORD          "pass"
 #define USER_MQTT_SERVER          ""
 #define USER_MQTT_PORT            1883
-#define USER_MQTT_USERNAME        "t"
+#define USER_MQTT_USERNAME        "mqtt"
 #define USER_MQTT_PASSWORD        ""
 #define USER_MQTT_CLIENT_NAME     "LightMCU"           // Used to define MQTT topics, MQTT Client ID, and ArduinoOTA
- */
+#endif
+
 #define SECTION_START  0
 #define SECTION_END  1
 #define FIRE_START  2
@@ -49,6 +50,7 @@ int const ZONE_COUNT = 6;
 /************ Don't mess with ********************/
 const char* ssid = USER_SSID ; 
 const char* password = USER_PASSWORD ;
+const char* apPassword = USER_AP_PASSWORD;
 const char* mqtt_server = USER_MQTT_SERVER ;
 const int mqtt_port = USER_MQTT_PORT ;
 const char *mqtt_user = USER_MQTT_USERNAME ;
@@ -133,8 +135,11 @@ SimpleTimer timer;
 
 void setup() {
   // put your setup code here, to run once:
-
-  pinMode(BUTTON,INPUT);
+  pinMode(BUTTON,INPUT); //Setup the button pin
+  setup_wifi();
+  mqttConnect();
+  setupLeds();
+  setupZonesStats();
 }
 
 
@@ -142,7 +147,8 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   handleButton();
-
+  updateLeds
+  //need the light handle code here
 }
 
 bool buttonActive = false;
@@ -157,6 +163,7 @@ void handleButton() {
     }
     if ((millis() - buttonTimer > longPressTime) && (longPressActive == false)) {
 			longPressActive = true;
+      Serial.println("Long press, changing animation");
       nextAnimation();
 		}
   } else {
@@ -164,6 +171,7 @@ void handleButton() {
       if (longPress){
         longPress = false;
       }else {
+        Serial.println("Short press, flipping lights");
         flipLights();
       }
       buttonActive = false;
