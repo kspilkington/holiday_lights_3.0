@@ -1,5 +1,8 @@
+void handleRoot();
 
 void setupWeb(){
+
+  webServer.on("/",handleRoot());
 
   webServer.on("/color1",HTTP_POST,[](){
     
@@ -32,4 +35,10 @@ void handleWeb() {
       Serial.print (".");
     }
   }
+}
+
+void handleRoot(){
+  webServer.send(200,"text/html","
+  
+  ");
 }

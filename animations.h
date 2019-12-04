@@ -22,6 +22,7 @@ void chase();
 void checkIn(); 
 void updateLeds();
 void updateSectionLeds();
+Animation nextAnimation();
 
 void locator_Move()
 {
@@ -86,7 +87,70 @@ Animation getPattern(String effect){
   return result;
 }
 
-
+  NONE,
+  DOUBLE_CRASH,
+  RIPPLE,
+  FIRE,
+  BPM,
+  FILL,
+  CHASE,
+  COLOR_GLITTER,
+  RAINBOW,
+  TWINKLE,
+  SPOOKY_EYES,
+  SINGLE_RACE,
+  BLOCKED_COLORS,
+  LED_LOCATOR
+Animation nextAnimation() {
+  Animation pattern = zones[0].pattern;
+  switch (patern) {
+    case Animation.NONE:
+      return Animation.DOUBLE_CRASH;
+      break;
+    case Animation.DOUBLE_CRASH:
+      return Animation.RIPPLE;
+      break;
+    case Animation.RIPPLE:
+      return Animation.FIRE;
+      break;
+    case Animation.FIRE:
+      return Animation.BPM;
+      break;
+    case Animation.BPM:
+      return Animation.FILL;
+      break;
+    case Animation.FILL:
+      return Animation.CHASE;
+      break;
+    case Animation.CHASE:
+      return Animation.COLOR_GLITTER;
+      break;
+    case Animation.COLOR_GLITTER:
+      return Animation.RAINBOW;
+      break;
+    case Animation.RAINBOW:
+      return Animation.TWINKLE;
+      break;
+    case Animation.TWINKLE:
+      return Animation.SPOOKY_EYES;
+      break;
+    case Animation.SPOOKY_EYES:
+      return Animation.SINGLE_RACE;
+      break;
+    case Animation.SINGLE_RACE:
+      return Animation.BLOCKED_COLORS;
+      break;
+    case Animation.BLOCKED_COLORS:
+      return Animation.LED_LOCATOR;
+      break;
+    case Animation.LED_LOCATOR:
+      return Animation.NONE;
+      break;
+    default:
+      return Animation.DOUBLE_CRASH;
+  }
+  
+}
 /*****************  GLOBAL LIGHT FUNCTIONS  *******************************/
 /*****************  GLOBAL LIGHT FUNCTIONS  *******************************/
 /*****************  GLOBAL LIGHT FUNCTIONS  *******************************/
