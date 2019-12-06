@@ -1,21 +1,21 @@
 void handleRoot();
 
-void setupWeb(){
+void setupWeb() {
 
-  webServer.on("/",handleRoot);
+  webServer.on("/", handleRoot);
 
-  webServer.on("/color1",HTTP_POST,[](){
-    
+  webServer.on("/color1", HTTP_POST, []() {
+
   });
   webServer.begin();
 }
 
-  
+
 void handleWeb() {
   static bool webServerStarted = false;
 
   // check for connection
-  if ( WiFi.status() == WL_CONNECTED ) {
+  if ( wifiApActive || WiFi.status() == WL_CONNECTED) {
     if (!webServerStarted) {
       // turn off the board's LED when connected to wifi
       digitalWrite(LED, 1);
@@ -38,6 +38,6 @@ void handleWeb() {
   }
 }
 
-void handleRoot(){
-  webServer.send(200,"text/html","");
+void handleRoot() {
+  webServer.send(200, "text/html", "");
 }

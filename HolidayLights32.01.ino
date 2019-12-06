@@ -17,7 +17,7 @@
 /*******************  User set variables *******************************/
 #include "secrets.h" //Has the various usernnames aand files
 
-#ifndef USER_SSID
+#ifndef USER_SSID    //These could be defined in the secrets.h file
 #define USER_SSID                 "default"
 #define USER_AP_PASSWORD          "pass"
 #define USER_MQTT_SERVER          ""
@@ -27,14 +27,7 @@
 #define USER_MQTT_CLIENT_NAME     "LightMCU"           // Used to define MQTT topics, MQTT Client ID, and ArduinoOTA
 #endif
 
-#define SECTION_START  0
-#define SECTION_END  1
-#define FIRE_START  2
-#define FIRE_END  3
-//We could easily have more sections
-#define MAX_SECTION 9
-
-//Zones are limited by number 
+//Zones are limited by number
 int const ZONE_ONE = 0;
 int const ZONE_TWO = 1;
 int const ZONE_THREE = 2;
@@ -48,26 +41,16 @@ int const ZONE_COUNT = 6;
 
 
 /************ Don't mess with ********************/
-const char* ssid = USER_SSID ; 
-const char* password = USER_PASSWORD ;
-const char* apPassword = USER_AP_PASSWORD;
-const char* mqtt_server = USER_MQTT_SERVER ;
-const int mqtt_port = USER_MQTT_PORT ;
-const char *mqtt_user = USER_MQTT_USERNAME ;
-const char *mqtt_pass = USER_MQTT_PASSWORD ;
-const char *mqtt_client_name = USER_MQTT_CLIENT_NAME ; 
-
-const int BUTTON = 5;
-const int LED = 2;
+//Animation variables
 CRGBPalette16 gPal;
 int glitterFrequency = 100;
-int lightningChance = 65280;  
+int lightningChance = 65280;
 int firesize = 40;
 int SPARKING = 85;
 int COOLING =  120;
 bool gReverseDirection = false;
 uint8_t mark = 0;
-uint8_t gHue = 0; 
+uint8_t gHue = 0;
 uint8_t startPosition = 0;
 uint8_t glitterChance = 250;
 int chaseDelay = 1000;
@@ -78,36 +61,43 @@ int BeatsPerMinute = 62;
 uint8_t numberOfRainbows = 7;
 int twinkleChance = 250;
 int eyeChance = 248;
-bool boot = true;
-String effect = "None";
 bool showGlitter = false;
 bool showLightning = false;
 bool audioEffects = false;
 bool showLights = false;
-byte red1 = 255;
-byte green1 = 0;
-byte blue1 = 0;
-byte red2 = 0;
-byte green2 = 255;
-byte blue2 = 0;
-byte red3 = 0;
-byte green3 = 0;
-byte blue3 = 255;
-byte redG = 255;
-byte greenG = 255;
-byte blueG = 255;
 byte brightness = 84;
 char charPayload[50];
-int maxLEDs = 500;
+int maxLEDs = ZONE_ONE_LED_COUNT;
 int locatorLED = 0;
 char MQTT_locatorLED[50];
 int locatorDelay = 1000;
-bool mqttActive = true;
+
+CRGB gColors = CRGB[3];
+CRGB glitterColor = CRGB(255, 255, 255);
+
+//Network variables
+bool mqttActive = false;
+char* ssid = USER_SSID ;
+char* password = USER_PASSWORD ;
+char* apPassword = USER_AP_PASSWORD;
+char* mqtt_server = USER_MQTT_SERVER ;
+int mqtt_port = USER_MQTT_PORT ;
+char *mqtt_user = USER_MQTT_USERNAME ;
+char *mqtt_pass = USER_MQTT_PASSWORD ;
+char *mqtt_client_name = USER_MQTT_CLIENT_NAME ;
+
+const boolean WIFI_ACTIVATE_AP = true;
+boolean wifiApActive = false;
+boolean wifiClientActive = false;
+const boolean WIFI_ACTIVATE_CLIENT = true;
+bool noWeb = false;
 
 
-const boolean WIFI_AP_ACTIVE = true;
-const boolean WIFI_CONNECT = true;
+//Constants
+const int BUTTON = 5;
+const int LED = 2;
 
+const int COLOR_COUNT = 3;
 
 const String TOGGLE = "toggle";
 const String ON = "on";
@@ -124,7 +114,7 @@ const int Pin_sixthZone = 13; //marked as D7 on the board
 WebServer webServer(80);
 
 WiFiClient espClient;
-PubSubClient client(espClient);
+PubSubClient mqttClient(espClient);
 SimpleTimer timer;
 
 #include "animations.h"
@@ -133,18 +123,27 @@ SimpleTimer timer;
 #include "web.h"
 
 
+
 void setup() {
   Serial.begin(115200);
   Serial.println("Starting up");
-  
+
   FastLED.setDither( 0 );
   // put your setup code here, to run once:
-  pinMode(BUTTON,INPUT); //Setup the button pin
-  
-  Serial.println("Starting up Wifi");
-  setup_wifi();
-  Serial.println("Starting up mqtt");
-  mqttConnect();
+  pinMode(BUTTON, INPUT); //Setup the button pin
+  pinMode(LED, OUTPUT); //set the pin (2) for the onboard led
+
+  //Can I check the button here to see if it's high and turn/on/off features based on it?
+
+  if (digitalRead(BUTTON) != HIGH) {
+    Serial.println("Starting up Wifi");
+    setup_wifi();
+    Serial.println("Starting up mqtt");
+    mqttConnect();
+  } else {
+    Serial.println("Turning off all networking for this time due to button press during boot");
+    noWeb = true;
+  }
   Serial.println("Starting up leds");
   setupLeds();
   Serial.println("Starting up zones");
@@ -152,24 +151,26 @@ void setup() {
   Serial.println("Starting up max");
   calculateMax();
   Serial.println("Starting up mqtt callback");
-  client.setServer(mqtt_server, mqtt_port);
-  client.setCallback(callback);
+  if (mqttActive) {
+    mqttClient.setServer(mqtt_server, mqtt_port);
+    mqttClient.setCallback(mqttCallback);
+  }
   Serial.println("Starting ArduionoOTA");
-  ota();
+  otaSteup();
   Serial.println("Done with Ota");
   gPal = HeatColors_p;
-  
+
   timer.setTimeout(10000, chase);
   timer.setTimeout(120000, checkIn);
   Serial.println("Done Setup");
-  
+
 }
 
 
-void ota(){
-  
-  ArduinoOTA.setHostname(USER_MQTT_CLIENT_NAME);
-  ArduinoOTA
+void otaSteup() {
+  if (!noWeb && (wifiApActive || wifiClientActive)) {
+    ArduinoOTA.setHostname(USER_MQTT_CLIENT_NAME);
+    ArduinoOTA
     .onStart([]() {
       String type;
       if (ArduinoOTA.getCommand() == U_FLASH)
@@ -195,21 +196,26 @@ void ota(){
       else if (error == OTA_END_ERROR) Serial.println("End Failed");
     });
 
-  ArduinoOTA.begin();
+    ArduinoOTA.begin();
+  }
 }
 
 
-void fadeall() { for(int i = 0; i < ZONE_ONE_LED_COUNT; i++) { firstZoneLeds[i].nscale8(250); } }
+void fadeall() {
+  for (int i = 0; i < ZONE_ONE_LED_COUNT; i++) {
+    firstZoneLeds[i].nscale8(250);
+  }
+}
 
-void tempLights(){
-  
+void tempLights() {
+
   static uint8_t hue = 0;
-  for(int i = 0; i < ZONE_ONE_LED_COUNT; i++) {
-    // Set the i'th led to red 
-//    firstZoneLeds[i] = CHSV(hue++, 255, 255);
+  for (int i = 0; i < ZONE_ONE_LED_COUNT; i++) {
+    // Set the i'th led to red
+    //    firstZoneLeds[i] = CHSV(hue++, 255, 255);
     AllLeds[0][i] = CHSV(hue++, 255, 255);
     // Show the leds
-    FastLED.show(); 
+    FastLED.show();
     // now that we've shown the leds, reset the i'th led to black
     // leds[i] = CRGB::Black;
     fadeall();
@@ -218,10 +224,10 @@ void tempLights(){
   }
   Serial.print("x");
 
-  // Now go in the other direction.  
-  for(int i = (ZONE_ONE_LED_COUNT)-1; i >= 0; i--) {
-    // Set the i'th led to red 
-//    firstZoneLeds[i] = CHSV(hue++, 255, 255);
+  // Now go in the other direction.
+  for (int i = (ZONE_ONE_LED_COUNT) - 1; i >= 0; i--) {
+    // Set the i'th led to red
+    //    firstZoneLeds[i] = CHSV(hue++, 255, 255);
     AllLeds[0][i] = CHSV(hue++, 255, 255);
     // Show the leds
     FastLED.show();
@@ -236,38 +242,44 @@ void loop() {
   handleButton();
   LEDS.setBrightness(brightness);
   // put your main code here, to run repeatedly:
-//  Serial.println("Client status:"+client.connected());
-  if (!client.connected()) 
+  //  Serial.println("Client status:"+client.connected());
+  if (!mqttClient.connected())
   {
     Serial.println("Reconnecting");
     reconnect();
   }
-//  Serial.println("OTA");
-  if(showLights == false && false)
+  //  Serial.println("OTA");
+  if (showLights == false && !noWeb)
   {
-    ArduinoOTA.handle();  
+    ArduinoOTA.handle();
   }
 
-//  tempLights();
+  if (wifiApActive || wifiClientActive) {
+    handleWeb();
+  }
+
+  //  tempLights();
   Serial.println("timer");
   timer.run();
-  EVERY_N_MILLISECONDS( 20 ) { gHue++; }
-  if (ANIMATION_LEVEL == ZONE_LEVEL){
+  EVERY_N_MILLISECONDS( 20 ) {
+    gHue++;
+  }
+  if (ANIMATION_LEVEL == ZONE_LEVEL) {
     Serial.println("Updating zones");
     updateZoneLeds();
-  }else if (ANIMATION_LEVEL == SECTION_LEVEL){
+  } else if (ANIMATION_LEVEL == SECTION_LEVEL) {
     Serial.println("Updating sections");
     updateSectionLeds();
-  }else {
+  } else {
     Serial.println("Updating everything");
     updateZoneLeds();
   }
 
   Serial.println("leds");
-  for(int idx =0;idx< ZONE_COUNT; idx ++)
+  for (int idx = 0; idx < ZONE_COUNT; idx ++)
   {
-    Serial.println(((String)"leds: ")+idx+" show: "+zones[idx].active);
-    if (zones[idx].active){
+    Serial.println(((String)"leds: ") + idx + " show: " + zones[idx].active);
+    if (zones[idx].active) {
       FastLED.show();
     }
   }
@@ -280,21 +292,21 @@ bool longPress = false;
 long buttonTimer = 0;
 long longPressTime = 250;
 void handleButton() {
-  if (digitalRead(BUTTON) == HIGH){ //Use the button to swap the lights;
+  if (digitalRead(BUTTON) == HIGH) { //Use the button to swap the lights;
     if (buttonActive == false) {
       buttonActive = true;
       buttonTimer = millis();
     }
     if ((millis() - buttonTimer > longPressTime) && (longPress == false)) {
-			longPress = true;
+      longPress = true;
       Serial.println("Long press, changing animation");
       setZonesNextAnimation();
-		}
+    }
   } else {
-    if (buttonActive == true){
-      if (longPress){
+    if (buttonActive == true) {
+      if (longPress) {
         longPress = false;
-      }else {
+      } else {
         Serial.println("Short press, flipping lights");
         flipLights();
       }
@@ -303,7 +315,7 @@ void handleButton() {
   }
 }
 
-void flipLights(){
+void flipLights() {
   showLights = !showLights;
-  Serial.println((String)"Setting showLights : "+showLights);
+  Serial.println((String)"Setting showLights : " + showLights);
 }

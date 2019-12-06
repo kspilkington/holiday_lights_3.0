@@ -5,10 +5,10 @@ enum AnimationLevel {
   SECTION_LEVEL,
 };
 
-AnimationLevel ANIMATION_LEVEL=EVERYTHING;
+AnimationLevel ANIMATION_LEVEL = EVERYTHING;
 
 //Declare an Enum so we can easily use a switch statement
-enum Animation {
+enum AnimationType {
   NONE,
   DOUBLE_CRASH,
   RIPPLE,
@@ -25,24 +25,86 @@ enum Animation {
   LED_LOCATOR
 };
 
+class Animation {
+  private:
+    AnimationType effect;
+    Animation();
+
+  public:
+    Animation(const AnimationType& v): effect{v} {}
+    operator effect() const {
+      return effect;
+    }
+    AnimationType& operator=(AnimationType v) {
+      efFect = v;
+      return *this;
+    }
+    bool operator ==(const AnimationType v) const {
+      return effect == v;
+    }
+    bool operator !=(const AnimationType v) const {
+      return effect != v;
+    }
+    String toString() {
+      switch (effect) {
+        case RAINBOW:
+          return "Rainbow";
+          break;
+        case SPOOKY_EYES:
+          return "Spooky_Eyes";
+          break;
+        case NONE:
+        default:
+          return "NONE";
+      }
+      //  if (effect == "Rainbow"){
+      //    result = RAINBOW;
+      //  }else if (effect == "Spooky_Eyes"){
+      //    result = SPOOKY_EYES;
+      //  }else if (effect == "Color_Chase"){
+      //    result = CHASE;
+      //  }else if (effect == "Color_Glitter"){
+      //    result = COLOR_GLITTER;
+      //  }else if (effect == "Single_Race"){
+      //    result = SINGLE_RACE;
+      //  }else if (effect == "Double_Crash"){
+      //    result = DOUBLE_CRASH;
+      //  }else if (effect == "Blocked_Colors"){
+      //    result = BLOCKED_COLORS;
+      //  }else if (effect == "BPM"){
+      //    result = BPM;
+      //  }else if (effect == "Twinkle"){
+      //    result = TWINKLE;
+      //  }else if (effect == "Fill_Solid"){
+      //    result = FILL;
+      //  }else if (effect == "LED_Locator"){
+      //    result = LED_LOCATOR;
+      //  }else if (effect == "Ripple"){
+      //    result = RIPPLE;
+      //  }else if (effect == "Fire"){
+      //    result = FIRE;
+      //  }
+    }
+}
+
 
 
 struct LedStrip {
   bool active = true;
-  int center=0;
-  int steps=-1;
+  int center = 0;
+  int steps = -1;
   int previousLed = 0;
-  int start=0;
-  int end=1000;
-  int fireStart=1;
-  int fireEnd=1;
+  int start = 0;
+  int end = 1000;
+  int fireStart = 1;
+  int fireEnd = 1;
   Animation pattern = RAINBOW;
   CRGB* leds;
-  int ledCount=0;
+  int ledCount = 0;
 };
 
 struct Section : LedStrip {
-  int sectionId=0;
+  int sectionId = 0;
 };
 
 struct Zone : LedStrip {
@@ -50,51 +112,3 @@ struct Zone : LedStrip {
   int pin;
   Section sections[MAX_SECTION];
 };
-
-struct Settings {
-
-int glitterFrequency = 100;
-int lightningChance = 65280;  
-int firesize = 40;
-int SPARKING = 85;
-int COOLING =  120;
-bool gReverseDirection = false;
-uint8_t mark = 0;
-uint8_t gHue = 0; 
-uint8_t startPosition = 0;
-uint8_t glitterChance = 250;
-int chaseDelay = 1000;
-int lastPosition = 1;
-int lightning = 1;
-int raceSpeed = 12;
-int BeatsPerMinute = 62;
-uint8_t numberOfRainbows = 7;
-int twinkleChance = 250;
-int eyeChance = 248;
-bool boot = true;
-String effect = "None";
-bool showGlitter = false;
-bool showLightning = false;
-bool audioEffects = false;
-bool showLights = false;
-byte red1 = 255;
-byte green1 = 0;
-byte blue1 = 0;
-byte red2 = 0;
-byte green2 = 255;
-byte blue2 = 0;
-byte red3 = 0;
-byte green3 = 0;
-byte blue3 = 255;
-byte redG = 255;
-byte greenG = 255;
-byte blueG = 255;
-byte brightness = 84;
-char charPayload[50];
-int maxLEDs = 500;
-int locatorLED = 0;
-char MQTT_locatorLED[50];
-int locatorDelay = 1000;
-bool mqttActive = true;
-
-}
