@@ -1,7 +1,7 @@
-
 void Ripple(LedStrip strip);
 void locator_Move();
 void clearLeds();
+void clearLeds(LedStrip strip);
 Animation getPattern(String effect);
 void RGB_FILL(LedStrip strip);
 void ColorGlitter( fract8 chanceOfGlitter, LedStrip strip);
@@ -20,40 +20,49 @@ void addGlitter();
 void setupLeds();
 void chase();
 void checkIn(); 
-void updateLeds();
+void updateZoneLeds();
 void updateSectionLeds();
 Animation nextAnimation();
 
 void storeAnimationSettings();
 void loadAnimationSettings();
 
+void calculateMax()
+{
+    maxLEDs=0;
+  for (int idx =0; idx < ZONE_COUNT; idx ++)
+  {
+    maxLEDs = max(maxLEDs,zones[idx].ledCount);
+  }
+}
 void locator_Move()
 {
-  if(effect == "LED_Locator")
+  if(locatorLED <= maxLEDs)
   {
-    if(locatorLED <= maxLEDs)
-    {
-      String temp_str = String(locatorLED);
-      temp_str.toCharArray(MQTT_locatorLED, temp_str.length() + 1);
-      client.publish(USER_MQTT_CLIENT_NAME"/locator", MQTT_locatorLED);
-      locatorLED++;    
-    }
-    else
-    {
-      locatorLED = 0;
-    }
-    timer.setTimeout(locatorDelay, locator_Move);
+    String temp_str = String(locatorLED);
+    temp_str.toCharArray(MQTT_locatorLED, temp_str.length() + 1);
+    client.publish(USER_MQTT_CLIENT_NAME"/locator", MQTT_locatorLED);
+    locatorLED++;    
   }
+  else
+  {
+    locatorLED = 0;
+  }
+  timer.setTimeout(locatorDelay, locator_Move);
 }
 
 void clearLeds(){
   for(int idx = 0; idx < ZONE_COUNT; idx++)
     {
-      if (zones[idx].active){
-        fill_solid(zones[idx].leds, zones[idx].ledCount, CRGB::Black);
-      }
+      clearLeds(zones[idx]);
     } 
-  locator_Move();
+}
+
+
+void clearLeds(LedStrip strip){
+  if (strip.active){
+    fill_solid(strip.leds, strip.ledCount, CRGB::Black);
+  }
 }
 
 
@@ -89,68 +98,59 @@ Animation getPattern(String effect){
 
   return result;
 }
-
-  NONE,
-  DOUBLE_CRASH,
-  RIPPLE,
-  FIRE,
-  BPM,
-  FILL,
-  CHASE,
-  COLOR_GLITTER,
-  RAINBOW,
-  TWINKLE,
-  SPOOKY_EYES,
-  SINGLE_RACE,
-  BLOCKED_COLORS,
-  LED_LOCATOR
+void setZonesNextAnimation(){
+  Animation pattern = nextAnimation();
+  for(int idx = 0; idx < ZONE_COUNT;idx++){
+    Serial.println((String)"Setting zone "+idx+" to pattern :"+pattern); 
+    zones[idx].pattern = pattern;
+  }
+}
 Animation nextAnimation() {
   Animation pattern = zones[0].pattern;
-  switch (patern) {
-    case Animation.NONE:
-      return Animation.DOUBLE_CRASH;
+  switch (pattern) {
+    case NONE:
+      return DOUBLE_CRASH;
       break;
-    case Animation.DOUBLE_CRASH:
-      return Animation.RIPPLE;
+    case DOUBLE_CRASH:
+      return RIPPLE;
       break;
-    case Animation.RIPPLE:
-      return Animation.FIRE;
+    case RIPPLE:
+      return FIRE;
       break;
-    case Animation.FIRE:
-      return Animation.BPM;
+    case FIRE:
+      return BPM;
       break;
-    case Animation.BPM:
-      return Animation.FILL;
+    case BPM:
+      return FILL;
       break;
-    case Animation.FILL:
-      return Animation.CHASE;
+    case FILL:
+      return CHASE;
       break;
-    case Animation.CHASE:
-      return Animation.COLOR_GLITTER;
+    case CHASE:
+      return COLOR_GLITTER;
       break;
-    case Animation.COLOR_GLITTER:
-      return Animation.RAINBOW;
+    case COLOR_GLITTER:
+      return RAINBOW;
       break;
-    case Animation.RAINBOW:
-      return Animation.TWINKLE;
+    case RAINBOW:
+      return TWINKLE;
       break;
-    case Animation.TWINKLE:
-      return Animation.SPOOKY_EYES;
+    case TWINKLE:
+      return SPOOKY_EYES;
       break;
-    case Animation.SPOOKY_EYES:
-      return Animation.SINGLE_RACE;
+    case SPOOKY_EYES:
+      return SINGLE_RACE;
       break;
-    case Animation.SINGLE_RACE:
-      return Animation.BLOCKED_COLORS;
+    case SINGLE_RACE:
+      return BLOCKED_COLORS;
       break;
-    case Animation.BLOCKED_COLORS:
-      return Animation.LED_LOCATOR;
+    case BLOCKED_COLORS:
+      locator_Move();
+      return LED_LOCATOR;
       break;
-    case Animation.LED_LOCATOR:
-      return Animation.NONE;
-      break;
+    case LED_LOCATOR:
     default:
-      return Animation.DOUBLE_CRASH;
+      return DOUBLE_CRASH;
   }
   
 }
@@ -181,21 +181,26 @@ void checkIn()
 }
 
  
-void updateLeds(){
+void updateZoneLeds(){
   if (showLights == true){
     for (int idx = 0; idx < ZONE_COUNT;idx++){
       if (zones[idx].active){
+        Serial.println((String)"Setting pattern for Zone "+idx);
         switch(zones[idx].pattern){
           case RIPPLE:
+          Serial.println("Ripple");
             Ripple(zones[idx]);
             break;
           case CHASE:
+          Serial.println("RGB_FILL");
             RGB_FILL(zones[idx]);
             break;
           case DOUBLE_CRASH:
+          Serial.println("Crash");
           Crash(zones[idx]);
             break;
           case FIRE:
+          Serial.println("FIRE");
             for(int idy=0;idy<zones[idx].sectionCount;idy++){
               if (zones[idx].sections[idy].active){
                 sectionFire(zones[idx].sections[idy]);
@@ -203,33 +208,44 @@ void updateLeds(){
             }
             break;
           case BPM:
+          Serial.println("Bpm");
           Bpm(zones[idx]);
             break;
           case FILL:
+          Serial.println("Solid");
           Solid(zones[idx]);
             break;
           case COLOR_GLITTER:
+          Serial.println("ColorGlitter");
           ColorGlitter(glitterChance, zones[idx]);
             break;
           case RAINBOW:
+          Serial.println("Rainbow");
             Rainbow(zones[idx]);
             break;
           case TWINKLE:
+          Serial.println("Twinkle");
           Twinkle(zones[idx]);
             break;
           case SPOOKY_EYES:
+          Serial.println("Eyes");
           Eyes(zones[idx]);
             break;
           case LED_LOCATOR:
+          Serial.println("Locator");
           Locator(zones[idx]);
             break;
           case SINGLE_RACE:
+          Serial.println("SingleRace");
             SingleRace(zones[idx]);
             break;
           case BLOCKED_COLORS:
+          Serial.println("Blocked");
             Blocked(zones[idx]);
             break;
+          case NONE:
           default:
+            clearLeds(zones[idx]);
             break;
         }
       }
@@ -239,10 +255,7 @@ void updateLeds(){
   }else{
     for(int idx = 0; idx < ZONE_COUNT; idx ++)
     {
-      if (zones[idx].active) 
-      {
-      fill_solid(zones[idx].leds, zones[idx].ledCount, CRGB::Black); 
-      }
+      clearLeds();
     } 
   }
 } 
@@ -294,7 +307,9 @@ void updateSectionLeds(){
               case BLOCKED_COLORS:
                 Blocked(zones[idx].sections[idy]);
                 break;
+              case NONE:
               default:
+                clearLeds(zones[idx].sections[idy]);
                break;
             }
           }
@@ -304,13 +319,7 @@ void updateSectionLeds(){
     addGlitter();
     addLightning(); 
   }else{
-       for(int idx = 0; idx < ZONE_COUNT; idx ++)
-       {
-           if (zones[idx].active) 
-           {
-            fill_solid(zones[idx].leds, zones[idx].ledCount, CRGB::Black); 
-           }
-       } 
+       clearLeds();
   }
 }
 
@@ -437,34 +446,43 @@ void addGlitter()
 
 void setupLeds()
 {
-    if (zones[ZONE_ONE].active)
+    Serial.println("Setting up zone leds");
+    if (zones[ZONE_ONE].active && ZONE_ONE_LED_COUNT >0)
     {
-        FastLED.addLeds<WS2812B, Pin_firstZone, FIRSTZONE_COLOR_ORDER>(firstZoneLeds, ZONE_ONE_LED_COUNT);
+        Serial.println("Setting up zone 1 leds");
+        Serial.println(Pin_firstZone);
+        Serial.println(FIRSTZONE_COLOR_ORDER);
+        LEDS.addLeds<WS2812, Pin_firstZone, FIRSTZONE_COLOR_ORDER>(AllLeds[0], ZONE_ONE_LED_COUNT);
     }
 
-    if (zones[ZONE_TWO].active)
+    if (zones[ZONE_TWO].active && ZONE_TWO_LED_COUNT >0)
     {
-    FastLED.addLeds<WS2812B, Pin_secondZone, SECONDZONE_COLOR_ORDER>(secondZoneLeds, ZONE_TWO_LED_COUNT);
+        Serial.println("Setting up zone 2 leds");
+      LEDS.addLeds<WS2812, Pin_secondZone, SECONDZONE_COLOR_ORDER>(AllLeds[1], ZONE_TWO_LED_COUNT);
     }
 
-    if (zones[ZONE_THREE].active)
+    if (zones[ZONE_THREE].active && ZONE_THREE_LED_COUNT >0)
     {
-    FastLED.addLeds<WS2812B, Pin_thirdZone, THIRDZONE_COLOR_ORDER>(thirdZoneLeds, ZONE_THREE_LED_COUNT);
+        Serial.println("Setting up zone 3 leds");
+      LEDS.addLeds<WS2812B, Pin_thirdZone, THIRDZONE_COLOR_ORDER>(AllLeds[2], ZONE_THREE_LED_COUNT);
     }
 
-    if (zones[ZONE_FOUR].active)
+    if (zones[ZONE_FOUR].active && ZONE_FOUR_LED_COUNT >0)
     {
-    FastLED.addLeds<WS2812B, Pin_fourthZone, FOURTHZONE_COLOR_ORDER>(fourthZoneLeds, ZONE_FOUR_LED_COUNT);
+        Serial.println("Setting up zone 4 leds");
+      LEDS.addLeds<WS2812B, Pin_fourthZone, FOURTHZONE_COLOR_ORDER>(AllLeds[3], ZONE_FOUR_LED_COUNT);
     }
 
-    if (zones[ZONE_FIVE].active)
+    if (zones[ZONE_FIVE].active && ZONE_FIVE_LED_COUNT >0)
     {
-    FastLED.addLeds<WS2812B, Pin_fifthZone, FIFTHZONE_COLOR_ORDER>(fifthZoneLeds, ZONE_FIVE_LED_COUNT);
+        Serial.println("Setting up zone 5 leds");
+      LEDS.addLeds<WS2812B, Pin_fifthZone, FIFTHZONE_COLOR_ORDER>(AllLeds[4], ZONE_FIVE_LED_COUNT);
     }
     
-    if (zones[ZONE_SIX].active)
+    if (zones[ZONE_SIX].active && ZONE_SIX_LED_COUNT >0)
     {
-    FastLED.addLeds<WS2812B, Pin_sixthZone, SIXTHZONE_COLOR_ORDER>(sixthZoneLeds, ZONE_SIX_LED_COUNT);
+        Serial.println("Setting up zone 6 leds");
+      LEDS.addLeds<WS2812B, Pin_sixthZone, SIXTHZONE_COLOR_ORDER>(AllLeds[5], ZONE_SIX_LED_COUNT);
     }
 }
 
@@ -635,6 +653,9 @@ void Crash(LedStrip strip)
 
 void Rainbow(LedStrip strip)
 {
+  Serial.println(strip.ledCount);
+  Serial.println(gHue);
+  Serial.println(numberOfRainbows);
   fill_rainbow( strip.leds,strip.ledCount, gHue, numberOfRainbows);
 }
 

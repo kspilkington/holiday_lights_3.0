@@ -1,6 +1,6 @@
 /*****************  NEEDED TO MAKE NODEMCU WORK ***************************/
 #define FASTLED_INTERRUPT_RETRY_COUNT 0
-#define FASTLED_ESP8266_RAW_PIN_ORDER
+//#define FASTLED_ESP32_RAW_PIN_ORDER
 
 /******************  LIBRARY SECTION *************************************/
 
@@ -34,7 +34,7 @@
 //We could easily have more sections
 #define MAX_SECTION 9
 
-//Zones are limited by pins 
+//Zones are limited by number 
 int const ZONE_ONE = 0;
 int const ZONE_TWO = 1;
 int const ZONE_THREE = 2;
@@ -96,7 +96,7 @@ byte blue3 = 255;
 byte redG = 255;
 byte greenG = 255;
 byte blueG = 255;
-byte brightness = 255;
+byte brightness = 84;
 char charPayload[50];
 int maxLEDs = 500;
 int locatorLED = 0;
@@ -105,7 +105,7 @@ int locatorDelay = 1000;
 bool mqttActive = true;
 
 
-const boolean WIFI_AP = false;
+const boolean WIFI_AP_ACTIVE = true;
 const boolean WIFI_CONNECT = true;
 
 
@@ -113,8 +113,8 @@ const String TOGGLE = "toggle";
 const String ON = "on";
 const String OFF = "off";
 
-const int Pin_firstZone = 5; //marked as D1 on the board
-const int Pin_secondZone = 4; //marked as D2 on the board
+const int Pin_firstZone = 22; //marked as D4 on the board
+const int Pin_secondZone = 1; //marked as D2 on the board
 const int Pin_thirdZone = 0; //marked as D3 on the board
 const int Pin_fourthZone = 14; //marked as D5 on the board
 const int Pin_fifthZone = 12; //marked as D6 on the board
@@ -134,22 +134,146 @@ SimpleTimer timer;
 
 
 void setup() {
+  Serial.begin(115200);
+  Serial.println("Starting up");
+  
+  FastLED.setDither( 0 );
   // put your setup code here, to run once:
   pinMode(BUTTON,INPUT); //Setup the button pin
+  
+  Serial.println("Starting up Wifi");
   setup_wifi();
+  Serial.println("Starting up mqtt");
   mqttConnect();
+  Serial.println("Starting up leds");
   setupLeds();
+  Serial.println("Starting up zones");
   setupZonesStats();
+  Serial.println("Starting up max");
+  calculateMax();
+  Serial.println("Starting up mqtt callback");
+  client.setServer(mqtt_server, mqtt_port);
+  client.setCallback(callback);
+  Serial.println("Starting ArduionoOTA");
+  ota();
+  Serial.println("Done with Ota");
+  gPal = HeatColors_p;
+  
+  timer.setTimeout(10000, chase);
+  timer.setTimeout(120000, checkIn);
+  Serial.println("Done Setup");
+  
 }
 
 
+void ota(){
+  
+  ArduinoOTA.setHostname(USER_MQTT_CLIENT_NAME);
+  ArduinoOTA
+    .onStart([]() {
+      String type;
+      if (ArduinoOTA.getCommand() == U_FLASH)
+        type = "sketch";
+      else // U_SPIFFS
+        type = "filesystem";
 
+      // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+      Serial.println("Start updating " + type);
+    })
+    .onEnd([]() {
+      Serial.println("\nEnd");
+    })
+    .onProgress([](unsigned int progress, unsigned int total) {
+      Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+    })
+    .onError([](ota_error_t error) {
+      Serial.printf("Error[%u]: ", error);
+      if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+      else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+      else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+      else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+      else if (error == OTA_END_ERROR) Serial.println("End Failed");
+    });
+
+  ArduinoOTA.begin();
+}
+
+
+void fadeall() { for(int i = 0; i < ZONE_ONE_LED_COUNT; i++) { firstZoneLeds[i].nscale8(250); } }
+
+void tempLights(){
+  
+  static uint8_t hue = 0;
+  for(int i = 0; i < ZONE_ONE_LED_COUNT; i++) {
+    // Set the i'th led to red 
+//    firstZoneLeds[i] = CHSV(hue++, 255, 255);
+    AllLeds[0][i] = CHSV(hue++, 255, 255);
+    // Show the leds
+    FastLED.show(); 
+    // now that we've shown the leds, reset the i'th led to black
+    // leds[i] = CRGB::Black;
+    fadeall();
+    // Wait a little bit before we loop around and do it again
+    delay(10);
+  }
+  Serial.print("x");
+
+  // Now go in the other direction.  
+  for(int i = (ZONE_ONE_LED_COUNT)-1; i >= 0; i--) {
+    // Set the i'th led to red 
+//    firstZoneLeds[i] = CHSV(hue++, 255, 255);
+    AllLeds[0][i] = CHSV(hue++, 255, 255);
+    // Show the leds
+    FastLED.show();
+    // now that we've shown the leds, reset the i'th led to black
+    // leds[i] = CRGB::Black;
+    fadeall();
+    // Wait a little bit before we loop around and do it again
+    delay(10);
+  }
+}
 void loop() {
-  // put your main code here, to run repeatedly:
   handleButton();
-  updateLeds
-  //need the light handle code here
+  LEDS.setBrightness(brightness);
+  // put your main code here, to run repeatedly:
+//  Serial.println("Client status:"+client.connected());
+  if (!client.connected()) 
+  {
+    Serial.println("Reconnecting");
+    reconnect();
+  }
+//  Serial.println("OTA");
+  if(showLights == false && false)
+  {
+    ArduinoOTA.handle();  
+  }
+
+//  tempLights();
+  Serial.println("timer");
+  timer.run();
+  EVERY_N_MILLISECONDS( 20 ) { gHue++; }
+  if (ANIMATION_LEVEL == ZONE_LEVEL){
+    Serial.println("Updating zones");
+    updateZoneLeds();
+  }else if (ANIMATION_LEVEL == SECTION_LEVEL){
+    Serial.println("Updating sections");
+    updateSectionLeds();
+  }else {
+    Serial.println("Updating everything");
+    updateZoneLeds();
+  }
+
+  Serial.println("leds");
+  for(int idx =0;idx< ZONE_COUNT; idx ++)
+  {
+    Serial.println(((String)"leds: ")+idx+" show: "+zones[idx].active);
+    if (zones[idx].active){
+      FastLED.show();
+    }
+  }
+  Serial.println("leds done");
 }
+
 
 bool buttonActive = false;
 bool longPress = false;
@@ -161,10 +285,10 @@ void handleButton() {
       buttonActive = true;
       buttonTimer = millis();
     }
-    if ((millis() - buttonTimer > longPressTime) && (longPressActive == false)) {
-			longPressActive = true;
+    if ((millis() - buttonTimer > longPressTime) && (longPress == false)) {
+			longPress = true;
       Serial.println("Long press, changing animation");
-      nextAnimation();
+      setZonesNextAnimation();
 		}
   } else {
     if (buttonActive == true){
@@ -181,5 +305,5 @@ void handleButton() {
 
 void flipLights(){
   showLights = !showLights;
-  Serial.println("Setting showLights : "+showLights);
+  Serial.println((String)"Setting showLights : "+showLights);
 }

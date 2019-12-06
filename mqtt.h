@@ -1,47 +1,61 @@
 /************************** MQTT Connection *********************/
 void mqttConnect(){
-    if (mqttActive)
-    {
-        Serial.print("Attempting MQTT connection...");
+  if (mqttActive){   
+    // Loop until we're reconnected
+    int retries = 0;
+    client.setServer(mqtt_server, mqtt_port);
+    while (!client.connected()) {
+      if(retries < 150)
+      {
+          Serial.print("Attempting MQTT connection...");
         // Attempt to connect
+        Serial.println(mqtt_client_name);
+        Serial.println(mqtt_user);
+        Serial.println(mqtt_pass);
         if (client.connect(mqtt_client_name, mqtt_user, mqtt_pass)) 
         {
-            Serial.println("connected");
-            // Once connected, publish an announcement...
-            if(boot == true)
-            {
+          Serial.println("connected");
+          // Once connected, publish an announcement...
+          if(boot == true)
+          {
             client.publish(USER_MQTT_CLIENT_NAME"/checkIn","Rebooted");
             boot = false;
-            }
-            if(boot == false)
-            {
+          }
+          if(boot == false)
+          {
             client.publish(USER_MQTT_CLIENT_NAME"/checkIn","Reconnected"); 
-            }
-            // ... and resubscribe
-            client.subscribe(USER_MQTT_CLIENT_NAME"/configure");
-            client.subscribe(USER_MQTT_CLIENT_NAME"/modifier");
-            client.subscribe(USER_MQTT_CLIENT_NAME"/effect");
-            client.subscribe(USER_MQTT_CLIENT_NAME"/state");
-            client.subscribe(USER_MQTT_CLIENT_NAME"/color1");
-            client.subscribe(USER_MQTT_CLIENT_NAME"/color2");
-            client.subscribe(USER_MQTT_CLIENT_NAME"/color3");
-            client.subscribe(USER_MQTT_CLIENT_NAME"/power");
-            client.subscribe(USER_MQTT_CLIENT_NAME"/brightness");
-            client.subscribe(USER_MQTT_CLIENT_NAME"/addEffects");
-            client.subscribe(USER_MQTT_CLIENT_NAME"/lightningChance");
-            client.subscribe(USER_MQTT_CLIENT_NAME"/glitterChance");
-            client.subscribe(USER_MQTT_CLIENT_NAME"/glitterColor");
+          }
+          // ... and resubscribe
+          client.subscribe(USER_MQTT_CLIENT_NAME"/configure");
+          client.subscribe(USER_MQTT_CLIENT_NAME"/modifier");
+          client.subscribe(USER_MQTT_CLIENT_NAME"/effect");
+          client.subscribe(USER_MQTT_CLIENT_NAME"/state");
+          client.subscribe(USER_MQTT_CLIENT_NAME"/color1");
+          client.subscribe(USER_MQTT_CLIENT_NAME"/color2");
+          client.subscribe(USER_MQTT_CLIENT_NAME"/color3");
+          client.subscribe(USER_MQTT_CLIENT_NAME"/power");
+          client.subscribe(USER_MQTT_CLIENT_NAME"/brightness");
+          client.subscribe(USER_MQTT_CLIENT_NAME"/addEffects");
+          client.subscribe(USER_MQTT_CLIENT_NAME"/lightningChance");
+          client.subscribe(USER_MQTT_CLIENT_NAME"/glitterChance");
+          client.subscribe(USER_MQTT_CLIENT_NAME"/glitterColor");
         } 
         else 
         {
-            Serial.print("failed, rc=");
-            Serial.print(client.state());
-            Serial.println(" try again in 5 seconds");
-            retries++;
-            // Wait 5 seconds before retrying
-            delay(5000);
+          Serial.print("failed, rc=");
+          Serial.print(client.state());
+          Serial.println(" try again in 5 seconds");
+          retries++;
+          // Wait 5 seconds before retrying
+          delay(5000);
         }
+      }
+      if(retries > 1500)
+      {
+      ESP.restart();
+      }
     }
+  }
 }
 
 
@@ -62,7 +76,6 @@ void callback(char* topic, byte* payload, unsigned int length)
   String newPayload = String((char *)payload);
   int intPayload = newPayload.toInt();
   Serial.println(newPayload);
-  Serial.println();
   newPayload.toCharArray(charPayload, newPayload.length() + 1); 
   if (newTopic == USER_MQTT_CLIENT_NAME"/modifier")
   {

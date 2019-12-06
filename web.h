@@ -2,7 +2,7 @@ void handleRoot();
 
 void setupWeb(){
 
-  webServer.on("/",handleRoot());
+  webServer.on("/",handleRoot);
 
   webServer.on("/color1",HTTP_POST,[](){
     
@@ -39,7 +39,5 @@ void handleWeb() {
 }
 
 void handleRoot(){
-  webServer.send(200,"text/html","
-  
-  ");
+  webServer.send(200,"text/html","");
 }
