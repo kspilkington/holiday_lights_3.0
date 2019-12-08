@@ -77,15 +77,15 @@ void mqttCallback(char* topic, byte* payload, unsigned int length)
   if (newTopic == USER_MQTT_CLIENT_NAME"/modifier")
   {
     mqttClient.publish(USER_MQTT_CLIENT_NAME"/modifierState", charPayload);
-    if (zone[0].pattern == DOUBLE_CRASH || zone[0].pattern == SINGLE_RACE)
+    if (zones[0].pattern == DOUBLE_CRASH || zones[0].pattern == SINGLE_RACE)
     {
       raceSpeed = (intPayload / 20);
     }
-    if (zone[0].pattern == BPM)
+    if (zones[0].pattern == BPM)
     {
       BeatsPerMinute = (intPayload / 4);
     }
-    if (zone[0].pattern == CHASE || zone[0].pattern == BLOCKED_COLORS)
+    if (zones[0].pattern == CHASE || zones[0].pattern == BLOCKED_COLORS)
     {
       chaseDelay = (intPayload * 5);
       if (chaseDelay < 100)
@@ -93,27 +93,27 @@ void mqttCallback(char* topic, byte* payload, unsigned int length)
         chaseDelay = 100;
       }
     }
-    if (zone[0].pattern == COLOR_GLITTER)
+    if (zones[0].pattern == COLOR_GLITTER)
     {
       glitterChance = (intPayload / 2);
     }
-    if (zone[0].pattern == RAINBOW)
+    if (zones[0].pattern == RAINBOW)
     {
       numberOfRainbows = (intPayload / 30);
     }
-    if (zone[0].pattern == TWINKLE)
+    if (zones[0].pattern == TWINKLE)
     {
       twinkleChance = map(intPayload, 0, 500, 0, 255);
     }
-    if (zone[0].pattern == SPOOKY_EYES)
+    if (zones[0].pattern == SPOOKY_EYES)
     {
       eyeChance = map(intPayload, 0, 500, 200, 255);
     }
-    if (zone[0].pattern == FIRE)
+    if (zones[0].pattern == FIRE)
     {
       firesize = map(intPayload, 0, 500, 10, 120);
     }
-    if (zone[0].pattern == LED_LOCATOR)
+    if (zones[0].pattern == LED_LOCATOR)
     {
       locatorDelay = map(intPayload, 0, 500, 500, 5000);
     }
@@ -165,7 +165,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length)
         }
       }
     }
-    mqttClient.publish(USER_MQTT_CLIENT_NAME"/effectState", newPayload);
+    mqttClient.publish(USER_MQTT_CLIENT_NAME"/effectState", charPayload);
     clearLeds();
   }
   for (int idx = 0; idx < ZONE_COUNT; idx++)
@@ -179,7 +179,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length)
     {
       if (newTopic == ((USER_MQTT_CLIENT_NAME"/effect/zone") + idx + ((String)"/section") + idy))
       {
-        zones[idx].sections[idy].pattern = getPattern(effect);
+        zones[idx].sections[idy].pattern = getPattern(newPayload);
         mqttClient.publish(((USER_MQTT_CLIENT_NAME"/effectState/zone") + idx + ((String)"/section") + idy).c_str(), charPayload);
       }
     }
@@ -202,7 +202,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length)
   for (int idx = 0; idx < COLOR_COUNT; idx++) {
     if (newTopic == ((String)USER_MQTT_CLIENT_NAME + "/color" + idx))
     {
-      mqttClient.publish(((String)USER_MQTT_CLIENT_NAME + "/color" + idx + "State"), charPayload);
+      mqttClient.publish(((String)USER_MQTT_CLIENT_NAME + "/color" + idx + "State").c_str(), charPayload);
       // get the position of the first and second commas
       uint8_t firstIndex = newPayload.indexOf(',');
       uint8_t lastIndex = newPayload.lastIndexOf(',');
@@ -292,5 +292,31 @@ void mqttCallback(char* topic, byte* payload, unsigned int length)
       showLights = !showLights;
     }
     mqttClient.publish(USER_MQTT_CLIENT_NAME "/powerState", showLights ? "ON" : "OFF");
+  }
+}
+
+void checkIn()
+{
+  mqttClient.publish(USER_MQTT_CLIENT_NAME"/checkIn", "OK");
+  timer.setTimeout(120000, checkIn);
+}
+
+void mqttReconnect()
+{
+  // Loop until we're reconnected
+  if (wifiClientActive && mqttActive) {
+    int retries = 0;
+    while (!mqttClient.connected()) {
+      if (retries < 15)
+      {
+        mqttConnect();
+        retries++;
+      }
+      if (retries >= 15)
+      {
+        Serial.println("Unable to connect to mqtt server");
+        ESP.restart();
+      }
+    }
   }
 }

@@ -1,19 +1,27 @@
 /*****************  NEEDED TO MAKE NODEMCU WORK ***************************/
 #define FASTLED_INTERRUPT_RETRY_COUNT 0
-//#define FASTLED_ESP32_RAW_PIN_ORDER
+#define UPDATES_PER_SECOND 100
+//#define WIFI_CLIENT_ACTIVATE 
+//#define WIFI_AP_ACTIVATE 
+//#define MQTT_ACTIVATE 
+//#define WEBSERVER 
 
 /******************  LIBRARY SECTION *************************************/
 
 #include <FastLED.h>        //https://github.com/FastLED/FastLED
 #include <SimpleTimer.h>    //https://github.com/thehookup/Simple-Timer-Library
-#include <PubSubClient.h>   //https://github.com/knolleary/pubsubclient
+#if defined(WIFI_CLIENT_ACTIVATE) || defined(WIFI_AP_ACTIVATE)
 #include <WiFi.h>    //if you get an error here you need to install the ESP32 board manager 
-#include <WifiClient.h> //  
-#include <ESPmDNS.h>    //if you get an error here you need to install the ESP8266 board manager 
 #include <ArduinoOTA.h>     //ArduinoOTA is now included with the ArduinoIDE
-#include <EEPROM.h>    //Long term storage (for state and wifi setup
+#endif
+#ifdef MQTT_ACTIVATE
+#include <WifiClient.h> //  
+#include <PubSubClient.h>   //https://github.com/knolleary/pubsubclient
+#include <ESPmDNS.h>    //if you get an error here you need to install the ESP8266 board manager 
+#endif
+#ifdef WEBSERVER
 #include <WebServer.h>
-
+#endif
 /*******************  User set variables *******************************/
 #include "secrets.h" //Has the various usernnames aand files
 
@@ -27,19 +35,10 @@
 #define USER_MQTT_CLIENT_NAME     "LightMCU"           // Used to define MQTT topics, MQTT Client ID, and ArduinoOTA
 #endif
 
-//Zones are limited by number
-int const ZONE_ONE = 0;
-int const ZONE_TWO = 1;
-int const ZONE_THREE = 2;
-int const ZONE_FOUR = 3;
-int const ZONE_FIVE = 4;
-int const ZONE_SIX = 5;
-int const ZONE_COUNT = 6;
 
-#include "definitions.h"
+
+
 #include "zoneDefinitions.h"
-
-
 /************ Don't mess with ********************/
 //Animation variables
 CRGBPalette16 gPal;
@@ -72,7 +71,7 @@ int locatorLED = 0;
 char MQTT_locatorLED[50];
 int locatorDelay = 1000;
 
-CRGB gColors = CRGB[3];
+CRGB gColors[3] = {CRGB(255,0,0),CRGB(0,255,0),CRGB(0,0,255)};
 CRGB glitterColor = CRGB(255, 255, 255);
 
 //Network variables
@@ -85,6 +84,7 @@ int mqtt_port = USER_MQTT_PORT ;
 char *mqtt_user = USER_MQTT_USERNAME ;
 char *mqtt_pass = USER_MQTT_PASSWORD ;
 char *mqtt_client_name = USER_MQTT_CLIENT_NAME ;
+bool boot = true;
 
 const boolean WIFI_ACTIVATE_AP = true;
 boolean wifiApActive = false;
@@ -111,17 +111,25 @@ const int Pin_fifthZone = 12; //marked as D6 on the board
 const int Pin_sixthZone = 13; //marked as D7 on the board
 
 
-WebServer webServer(80);
 
-WiFiClient espClient;
-PubSubClient mqttClient(espClient);
 SimpleTimer timer;
 
 #include "animations.h"
-#include "mqtt.h"
-#include "wifi.h"
-#include "web.h"
 
+#if defined(WIFI_CLIENT_ACTIVATE) || defined(WIFI_AP_ACTIVATE)
+#include "wifi.h"
+#endif
+
+#ifdef MQTT_ACTIVATE
+WiFiClient espClient;
+PubSubClient mqttClient(espClient);
+#include "mqtt.h"
+#endif
+
+#ifdef WEBSERVER
+WebServer webServer(80);
+#include "web.h"
+#endif
 
 
 void setup() {
@@ -135,155 +143,89 @@ void setup() {
 
   //Can I check the button here to see if it's high and turn/on/off features based on it?
 
-  if (digitalRead(BUTTON) != HIGH) {
+#if defined(WIFI_CLIENT_ACTIVATE) || defined(WIFI_AP_ACTIVATE)
+  if (digitalRead(BUTTON) == HIGH) {
     Serial.println("Starting up Wifi");
     setup_wifi();
-    Serial.println("Starting up mqtt");
-    mqttConnect();
+    otaSteup();
   } else {
     Serial.println("Turning off all networking for this time due to button press during boot");
     noWeb = true;
   }
-  Serial.println("Starting up leds");
-  setupLeds();
+#endif
+
   Serial.println("Starting up zones");
   setupZonesStats();
+  Serial.println("Starting up leds");
+  setupLeds();
   Serial.println("Starting up max");
   calculateMax();
-  Serial.println("Starting up mqtt callback");
+#ifdef MQTT_ACTIVATE
+  Serial.println("Starting up mqtt");
+  mqttConnect();
   if (mqttActive) {
+    Serial.println("Starting up mqtt callback");
     mqttClient.setServer(mqtt_server, mqtt_port);
     mqttClient.setCallback(mqttCallback);
+    timer.setTimeout(120000, checkIn);
   }
-  Serial.println("Starting ArduionoOTA");
-  otaSteup();
-  Serial.println("Done with Ota");
+#endif
   gPal = HeatColors_p;
 
   timer.setTimeout(10000, chase);
-  timer.setTimeout(120000, checkIn);
   Serial.println("Done Setup");
 
 }
 
 
-void otaSteup() {
-  if (!noWeb && (wifiApActive || wifiClientActive)) {
-    ArduinoOTA.setHostname(USER_MQTT_CLIENT_NAME);
-    ArduinoOTA
-    .onStart([]() {
-      String type;
-      if (ArduinoOTA.getCommand() == U_FLASH)
-        type = "sketch";
-      else // U_SPIFFS
-        type = "filesystem";
 
-      // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-      Serial.println("Start updating " + type);
-    })
-    .onEnd([]() {
-      Serial.println("\nEnd");
-    })
-    .onProgress([](unsigned int progress, unsigned int total) {
-      Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-    })
-    .onError([](ota_error_t error) {
-      Serial.printf("Error[%u]: ", error);
-      if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-      else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-      else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-      else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-      else if (error == OTA_END_ERROR) Serial.println("End Failed");
-    });
-
-    ArduinoOTA.begin();
-  }
-}
-
-
-void fadeall() {
-  for (int i = 0; i < ZONE_ONE_LED_COUNT; i++) {
-    firstZoneLeds[i].nscale8(250);
-  }
-}
-
-void tempLights() {
-
-  static uint8_t hue = 0;
-  for (int i = 0; i < ZONE_ONE_LED_COUNT; i++) {
-    // Set the i'th led to red
-    //    firstZoneLeds[i] = CHSV(hue++, 255, 255);
-    AllLeds[0][i] = CHSV(hue++, 255, 255);
-    // Show the leds
-    FastLED.show();
-    // now that we've shown the leds, reset the i'th led to black
-    // leds[i] = CRGB::Black;
-    fadeall();
-    // Wait a little bit before we loop around and do it again
-    delay(10);
-  }
-  Serial.print("x");
-
-  // Now go in the other direction.
-  for (int i = (ZONE_ONE_LED_COUNT) - 1; i >= 0; i--) {
-    // Set the i'th led to red
-    //    firstZoneLeds[i] = CHSV(hue++, 255, 255);
-    AllLeds[0][i] = CHSV(hue++, 255, 255);
-    // Show the leds
-    FastLED.show();
-    // now that we've shown the leds, reset the i'th led to black
-    // leds[i] = CRGB::Black;
-    fadeall();
-    // Wait a little bit before we loop around and do it again
-    delay(10);
-  }
-}
 void loop() {
   handleButton();
   LEDS.setBrightness(brightness);
   // put your main code here, to run repeatedly:
   //  Serial.println("Client status:"+client.connected());
-  if (!mqttClient.connected())
+#ifdef MQTT_ACTIVATE
+  if (!noWeb && !mqttClient.connected())
   {
     Serial.println("Reconnecting");
-    reconnect();
+    mqttReconnect();
   }
+#endif
+#if defined(WIFI_CLIENT_ACTIVATE) || defined(WIFI_AP_ACTIVATE)
   //  Serial.println("OTA");
   if (showLights == false && !noWeb)
   {
     ArduinoOTA.handle();
   }
-
+#endif
+#ifdef WEBSERVER
   if (wifiApActive || wifiClientActive) {
     handleWeb();
   }
-
+#endif
   //  tempLights();
-  Serial.println("timer");
   timer.run();
   EVERY_N_MILLISECONDS( 20 ) {
     gHue++;
   }
+  EVERY_N_MILLISECONDS(100){
   if (ANIMATION_LEVEL == ZONE_LEVEL) {
-    Serial.println("Updating zones");
     updateZoneLeds();
   } else if (ANIMATION_LEVEL == SECTION_LEVEL) {
-    Serial.println("Updating sections");
     updateSectionLeds();
   } else {
-    Serial.println("Updating everything");
     updateZoneLeds();
   }
+} 
 
-  Serial.println("leds");
   for (int idx = 0; idx < ZONE_COUNT; idx ++)
   {
-    Serial.println(((String)"leds: ") + idx + " show: " + zones[idx].active);
+//    Serial.println(((String)"leds: ") + idx + " show: " + zones[idx].active);
     if (zones[idx].active) {
       FastLED.show();
     }
   }
-  Serial.println("leds done");
+//  Serial.println("leds done");
 }
 
 
@@ -318,4 +260,6 @@ void handleButton() {
 void flipLights() {
   showLights = !showLights;
   Serial.println((String)"Setting showLights : " + showLights);
+  Serial.println((String)"Animation :" +getPatternName(zones[0].pattern));
+  clearLeds();
 }
