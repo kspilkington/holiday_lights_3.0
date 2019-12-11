@@ -45,7 +45,6 @@ void locator_Move()
     client.publish(USER_MQTT_CLIENT_NAME"/locator", MQTT_locatorLED);
 #endif
     locatorLED++;
-    Serial.println((String)"Led: "+locatorLED);
   }
   else
   {
@@ -149,12 +148,12 @@ String getPatternName(Animation pattern){
   }
 }
 void setZonesNextAnimation() {
+  clearLeds();
   Animation pattern = nextAnimation();
   Serial.println("Setting animation to "+getPatternName(pattern));
   for (int idx = 0; idx < ZONE_COUNT; idx++) {
     zones[idx].pattern = pattern;
   }
-  clearLeds();
 }
 
 
@@ -235,7 +234,6 @@ void updateZoneLeds() {
       if (zones[idx].active) {
         switch (zones[idx].pattern) {
           case RIPPLE:
-          Serial.println((String)"Zone end"+zones[idx].endIdx);
             rippleAnimation(zones[idx]);
             break;
           case CHASE:
@@ -530,18 +528,14 @@ void setupLeds()
 void rippleAnimation(LedStrip& strip)
 {
   int ledCount = strip.ledCount;
-  Serial.println((String)"Zone start "+strip.start);
-  Serial.println((String)"Zone end "+strip.endIdx);
-  Serial.println((String)"Zone "+strip.id);
   for (int idx = strip.start; idx < strip.endIdx; idx++)
   {
     strip.leds[idx] = CRGB((gColors[2].red / 75), (gColors[2].green / 75), (gColors[2].blue / 75));
   }
-  Serial.println((String)"Zone count"+strip.start);
   switch (strip.steps)
   {
     case -1:
-      strip.center = strip.start+random16(ledCount);
+      strip.center = strip.start+(random16(ledCount)/2);
       strip.steps = 0;
       break;
     case 0:

@@ -6,13 +6,13 @@
 #define FIFTHZONE_COLOR_ORDER           GRB                 //Color orders, can be RGB, RBG, GRB, GBR, BRG, BGR
 #define SIXTHZONE_COLOR_ORDER           GRB
 
-#define ZONE_ONE_LED_COUNT 100
+#define ZONE_ONE_LED_COUNT 149
 #define ZONE_TWO_LED_COUNT 0
 #define ZONE_THREE_LED_COUNT 0
 #define ZONE_FOUR_LED_COUNT 0
 #define ZONE_FIVE_LED_COUNT 0
 #define ZONE_SIX_LED_COUNT 0
-#define MAX_LED_ZONE_COUNT 100 //led size of the biggest zone
+#define MAX_LED_ZONE_COUNT 149 //led size of the biggest zone
 
 //We could easily have more sections
 #define MAX_SECTION 1
@@ -36,14 +36,12 @@ CRGB gAllLeds[MAX_ZONE_COUNT][MAX_LED_ZONE_COUNT];
 void setupZonesStats() {
   zones[ZONE_ONE].ledCount = ZONE_ONE_LED_COUNT;
   zones[ZONE_ONE].id = ZONE_ONE;
-  Serial.println((String)"Zones active: "+zones[ZONE_ONE].active);
   zones[ZONE_ONE].active = true;
-  Serial.println((String)"Zones active: "+zones[ZONE_ONE].active);
   zones[ZONE_ONE].pin = 22;
   zones[ZONE_ONE].sectionCount = 1;
   zones[ZONE_ONE].leds = gAllLeds[ZONE_ONE];
   zones[ZONE_ONE].start  =    0;           //starting LED for this zone
-  zones[ZONE_ONE].endIdx  =      99;         //ending LED for this zone
+  zones[ZONE_ONE].endIdx  =      149;         //ending LED for this zone
   zones[ZONE_ONE].fireStart  =       1;           //would you like fire to begin from this point? 0 = no 1 = yes
   zones[ZONE_ONE].fireEnd  =         1;           //would you like fire to begin from this point? 0 = no 1 = yes
   zones[ZONE_ONE].sections[0].active = true;

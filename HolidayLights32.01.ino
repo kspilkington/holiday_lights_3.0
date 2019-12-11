@@ -1,6 +1,6 @@
 /*****************  NEEDED TO MAKE NODEMCU WORK ***************************/
-#define FASTLED_INTERRUPT_RETRY_COUNT 0
-#define UPDATES_PER_SECOND 100
+//#define FASTLED_INTERRUPT_RETRY_COUNT 0
+//#define FASTLED_ALLOW_INTERRUPTS 0
 //#define WIFI_CLIENT_ACTIVATE 
 //#define WIFI_AP_ACTIVATE 
 //#define MQTT_ACTIVATE 
@@ -64,7 +64,7 @@ bool showGlitter = false;
 bool showLightning = false;
 bool audioEffects = false;
 bool showLights = false;
-byte brightness = 84;
+byte brightness = 100;
 char charPayload[50];
 int maxLEDs = ZONE_ONE_LED_COUNT;
 int locatorLED = 0;
@@ -75,16 +75,16 @@ CRGB gColors[3] = {CRGB(255,0,0),CRGB(0,255,0),CRGB(0,0,255)};
 CRGB glitterColor = CRGB(255, 255, 255);
 
 //Network variables
-bool mqttActive = false;
+bool  mqttActive = false;
 char* ssid = USER_SSID ;
 char* password = USER_PASSWORD ;
 char* apPassword = USER_AP_PASSWORD;
 char* mqtt_server = USER_MQTT_SERVER ;
-int mqtt_port = USER_MQTT_PORT ;
+int   mqtt_port = USER_MQTT_PORT ;
 char *mqtt_user = USER_MQTT_USERNAME ;
 char *mqtt_pass = USER_MQTT_PASSWORD ;
 char *mqtt_client_name = USER_MQTT_CLIENT_NAME ;
-bool boot = true;
+bool  boot = true;
 
 const boolean WIFI_ACTIVATE_AP = true;
 boolean wifiApActive = false;
@@ -203,6 +203,7 @@ void loop() {
     handleWeb();
   }
 #endif
+FastLED.show();
   //  tempLights();
   timer.run();
   EVERY_N_MILLISECONDS( 20 ) {
@@ -218,14 +219,6 @@ void loop() {
   }
 } 
 
-  for (int idx = 0; idx < ZONE_COUNT; idx ++)
-  {
-//    Serial.println(((String)"leds: ") + idx + " show: " + zones[idx].active);
-    if (zones[idx].active) {
-      FastLED.show();
-    }
-  }
-//  Serial.println("leds done");
 }
 
 
