@@ -101,7 +101,7 @@ Animation getPattern(String effect) {
   return result;
 }
 
-String getPatternName(Animation pattern){
+String getPatternName(Animation pattern) {
   switch (pattern) {
     case DOUBLE_CRASH:
       return "Double_Crash";
@@ -150,7 +150,7 @@ String getPatternName(Animation pattern){
 void setZonesNextAnimation() {
   clearLeds();
   Animation pattern = nextAnimation();
-  Serial.println("Setting animation to "+getPatternName(pattern));
+  Serial.println("Setting animation to " + getPatternName(pattern));
   for (int idx = 0; idx < ZONE_COUNT; idx++) {
     zones[idx].pattern = pattern;
   }
@@ -229,57 +229,58 @@ void chase()
 
 
 void updateZoneLeds() {
-  if (showLights == true) {
+  if (showLights) {
     for (int idx = 0; idx < ZONE_COUNT; idx++) {
       if (zones[idx].active) {
-        switch (zones[idx].pattern) {
-          case RIPPLE:
-            rippleAnimation(zones[idx]);
-            break;
-          case CHASE:
-            rgbFillAnimation(zones[idx]);
-            break;
-          case DOUBLE_CRASH:
-            crashAnimation(zones[idx]);
-            break;
-          case FIRE:
-            for (int idy = 0; idy < zones[idx].sectionCount; idy++) {
-              if (zones[idx].sections[idy].active) {
+        for (int idy = 0; idy < zones[idx].sectionCount; idy++) {
+          if (zones[idx].sections[idy].active) {
+            Serial.println((String)"Zone:"+idx+ "Section:"+idy);
+            switch (zones[idx].pattern) {
+              case RIPPLE:
+                rippleAnimation(zones[idx].sections[idy]);
+                break;
+              case CHASE:
+                rgbFillAnimation(zones[idx]);
+                break;
+              case DOUBLE_CRASH:
+                crashAnimation(zones[idx].sections[idy]);
+                break;
+              case FIRE:
                 sectionFireAnimation(zones[idx].sections[idy]);
-              }
+                break;
+              case BPM:
+                bpmAnimation(zones[idx]);
+                break;
+              case FILL:
+                solidAnimation(zones[idx]);
+                break;
+              case COLOR_GLITTER:
+                colorGlitterAnimation(glitterChance, zones[idx]);
+                break;
+              case RAINBOW:
+                rainbowAnimation(zones[idx]);
+                break;
+              case TWINKLE:
+                twinkleAnimation(zones[idx]);
+                break;
+              case SPOOKY_EYES:;
+                eyesAnimation(zones[idx]);
+                break;
+              case LED_LOCATOR:
+                locatorAnimation(zones[idx]);
+                break;
+              case SINGLE_RACE:
+                singleRaceAnimation(zones[idx]);
+                break;
+              case BLOCKED_COLORS:
+                blockedAnimation(zones[idx]);
+                break;
+              case NONE:
+              default:
+                clearLeds(zones[idx]);
+                break;
             }
-            break;
-          case BPM:
-            bpmAnimation(zones[idx]);
-            break;
-          case FILL:
-            solidAnimation(zones[idx]);
-            break;
-          case COLOR_GLITTER:
-            colorGlitterAnimation(glitterChance, zones[idx]);
-            break;
-          case RAINBOW:
-            rainbowAnimation(zones[idx]);
-            break;
-          case TWINKLE:
-            twinkleAnimation(zones[idx]);
-            break;
-          case SPOOKY_EYES:;
-            eyesAnimation(zones[idx]);
-            break;
-          case LED_LOCATOR:
-            locatorAnimation(zones[idx]);
-            break;
-          case SINGLE_RACE:
-            singleRaceAnimation(zones[idx]);
-            break;
-          case BLOCKED_COLORS:
-            blockedAnimation(zones[idx]);
-            break;
-          case NONE:
-          default:
-            clearLeds(zones[idx]);
-            break;
+          }
         }
       }
     }
@@ -468,7 +469,7 @@ void addGlitter()
 void setupLeds()
 {
   Serial.println("Setting up zone leds");
-  Serial.println((String)"Zone Active: "+zones[0].active);
+  Serial.println((String)"Zone Active: " + zones[0].active);
   if (zones[ZONE_ONE].active && ZONE_ONE_LED_COUNT > 0)
   {
     Serial.println("Setting up zone 1 leds");
@@ -527,7 +528,11 @@ void setupLeds()
 
 void rippleAnimation(LedStrip& strip)
 {
+  Serial.println((String)"Strip ID"+strip.id);
   int ledCount = strip.ledCount;
+  Serial.println((String)"Strip Count"+ledCount);
+  Serial.println((String)"Strip Start"+strip.start);
+  Serial.println((String)"Strip End"+strip.endIdx);
   for (int idx = strip.start; idx < strip.endIdx; idx++)
   {
     strip.leds[idx] = CRGB((gColors[2].red / 75), (gColors[2].green / 75), (gColors[2].blue / 75));
@@ -535,17 +540,24 @@ void rippleAnimation(LedStrip& strip)
   switch (strip.steps)
   {
     case -1:
-      strip.center = strip.start+(random16(ledCount)/2);
+      strip.center = strip.start + (random16(ledCount) / 2);
+  Serial.println((String)"Strip Center"+strip.center);
       strip.steps = 0;
       break;
     case 0:
+  Serial.println((String)"Strip Center"+strip.center);
       strip.leds[strip.center] = gColors[0];
       strip.steps ++;
       break;
     case 24:
       strip.steps = -1;
       break;
-    default:                                                             // Middle of the ripples.
+    default:                         
+                                     // Middle of the ripples.
+      int up = ((strip.center + strip.steps + ledCount) % ledCount);
+      int down = ((strip.center - strip.steps + ledCount) % ledCount);
+      Serial.println((String)"Strip Upd"+up);
+  Serial.println((String)"Strip Down"+down); 
       strip.leds[((strip.center + strip.steps + ledCount) % ledCount)] += CRGB((gColors[0].red / (strip.steps * 5)), (gColors[0].green / (strip.steps * 5)), (gColors[0].blue / (strip.steps * 5)));
       strip.leds[((strip.center - strip.steps + ledCount) % ledCount)] += CRGB((gColors[0].red / (strip.steps * 5)), (gColors[0].green / (strip.steps * 5)), (gColors[0].blue / (strip.steps * 5)));
       strip.steps ++;
@@ -805,8 +817,8 @@ void eyesAnimation(LedStrip& strip)
   if ( chance > eyeChance)
   {
     unsigned int eye = random16(strip.ledCount);
-    if (eye<4){
-      eye+=4;
+    if (eye < 4) {
+      eye += 4;
     }
     strip.leds[eye] = gColors[0];
     strip.leds[eye - 4] = gColors[0];
@@ -833,52 +845,52 @@ void locatorAnimation(LedStrip& strip)
 
 void sectionFireAnimation(LedStrip& strip)
 {
-//  int sectionEnd = strip.endIdx;
-//  int sectionStart = strip.start;
-//  const int size = sectionEnd - sectionStart;
-//  static byte heat[MAX_LED_ZONE_COUNT];
-//  for ( int i = 0; i < size; i++)
-//  {
-//    heat[i] = qsub8( heat[i],  random8(0, ((COOLING * 10) / size) + 2));
-//  }
-//
-//  for ( int k = size - 1; k >= 2; k--)
-//  {
-//    heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2] ) / 3;
-//  }
-//  if ( random8() < SPARKING )
-//  {
-//    int y = random8(7);
-//    heat[y] = qadd8( heat[y], random8(160, 255) );
-//  }
-//  for ( int j = 0; j < size; j++)
-//  {
-//    byte colorindex = scale8( heat[j], 240);
-//    CRGB color = ColorFromPalette( gPal, colorindex);
-//    int pixelnumber;
-//    if ( gReverseDirection ) {
-//      pixelnumber = (size - 1) - j;
-//    } else {
-//      pixelnumber = j;
-//    }
-//    int thisFlame = ((pixelnumber * firesize) / 100);
-//
-//    if (strip.fireStart == 1)
-//    {
-//      if (thisFlame <=  size)
-//      {
-//        strip.leds[sectionStart + thisFlame] = color;
-//      }
-//    }
-//
-//    if (strip.fireEnd == 1)
-//    {
-//      if (thisFlame <=  size )
-//      {
-//        strip.leds[sectionEnd - thisFlame] = color;
-//      }
-//    }
-//  }
+  //  int sectionEnd = strip.endIdx;
+  //  int sectionStart = strip.start;
+  //  const int size = sectionEnd - sectionStart;
+  //  static byte heat[MAX_LED_ZONE_COUNT];
+  //  for ( int i = 0; i < size; i++)
+  //  {
+  //    heat[i] = qsub8( heat[i],  random8(0, ((COOLING * 10) / size) + 2));
+  //  }
+  //
+  //  for ( int k = size - 1; k >= 2; k--)
+  //  {
+  //    heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2] ) / 3;
+  //  }
+  //  if ( random8() < SPARKING )
+  //  {
+  //    int y = random8(7);
+  //    heat[y] = qadd8( heat[y], random8(160, 255) );
+  //  }
+  //  for ( int j = 0; j < size; j++)
+  //  {
+  //    byte colorindex = scale8( heat[j], 240);
+  //    CRGB color = ColorFromPalette( gPal, colorindex);
+  //    int pixelnumber;
+  //    if ( gReverseDirection ) {
+  //      pixelnumber = (size - 1) - j;
+  //    } else {
+  //      pixelnumber = j;
+  //    }
+  //    int thisFlame = ((pixelnumber * firesize) / 100);
+  //
+  //    if (strip.fireStart == 1)
+  //    {
+  //      if (thisFlame <=  size)
+  //      {
+  //        strip.leds[sectionStart + thisFlame] = color;
+  //      }
+  //    }
+  //
+  //    if (strip.fireEnd == 1)
+  //    {
+  //      if (thisFlame <=  size )
+  //      {
+  //        strip.leds[sectionEnd - thisFlame] = color;
+  //      }
+  //    }
+  //  }
 }
 
 

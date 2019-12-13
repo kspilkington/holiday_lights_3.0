@@ -39,15 +39,16 @@ struct LedStrip {
   int fireStart = 1;
   int fireEnd = 1;
   Animation pattern = RIPPLE;
-  CRGB* leds;
+  CRGB* leds = {0};
   int ledCount = 0;
 };
 
 struct Section : LedStrip {
+  LedStrip parent;
 };
 
 struct Zone : LedStrip {
   int sectionCount;
   int pin;
-  Section sections[MAX_SECTION];
+  Section sections[MAX_SECTIONS];
 };

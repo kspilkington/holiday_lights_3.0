@@ -6,16 +6,16 @@
 #define FIFTHZONE_COLOR_ORDER           GRB                 //Color orders, can be RGB, RBG, GRB, GBR, BRG, BGR
 #define SIXTHZONE_COLOR_ORDER           GRB
 
-#define ZONE_ONE_LED_COUNT 149
+#define ZONE_ONE_LED_COUNT 89
 #define ZONE_TWO_LED_COUNT 0
 #define ZONE_THREE_LED_COUNT 0
 #define ZONE_FOUR_LED_COUNT 0
 #define ZONE_FIVE_LED_COUNT 0
 #define ZONE_SIX_LED_COUNT 0
-#define MAX_LED_ZONE_COUNT 149 //led size of the biggest zone
+#define MAX_LED_ZONE_COUNT 89 //led size of the biggest zone
 
 //We could easily have more sections
-#define MAX_SECTION 1
+#define MAX_SECTIONS 3
 
 #define MAX_ZONE_COUNT 1
 //Zones are limited by number
@@ -38,35 +38,43 @@ void setupZonesStats() {
   zones[ZONE_ONE].id = ZONE_ONE;
   zones[ZONE_ONE].active = true;
   zones[ZONE_ONE].pin = 22;
-  zones[ZONE_ONE].sectionCount = 1;
+  zones[ZONE_ONE].sectionCount = 3;
   zones[ZONE_ONE].leds = gAllLeds[ZONE_ONE];
   zones[ZONE_ONE].start  =    0;           //starting LED for this zone
-  zones[ZONE_ONE].endIdx  =      149;         //ending LED for this zone
+  zones[ZONE_ONE].endIdx  =      89;         //ending LED for this zone
   zones[ZONE_ONE].fireStart  =       1;           //would you like fire to begin from this point? 0 = no 1 = yes
   zones[ZONE_ONE].fireEnd  =         1;           //would you like fire to begin from this point? 0 = no 1 = yes
   zones[ZONE_ONE].sections[0].active = true;
-  zones[ZONE_ONE].sections[0].id = 0;
+  zones[ZONE_ONE].sections[0].ledCount = 40;
   zones[ZONE_ONE].sections[0].id = 0;
   zones[ZONE_ONE].sections[0].start  =    0;           //starting LED for this zone
-  zones[ZONE_ONE].sections[0].endIdx  =      99;         //ending LED for this zone
+  zones[ZONE_ONE].sections[0].endIdx  =      39;         //ending LED for this zone
   zones[ZONE_ONE].sections[0].fireStart  =       1;           //would you like fire to begin from this point? 0 = no 1 = yes
   zones[ZONE_ONE].sections[0].fireEnd  =         1;           //would you like fire to begin from this point? 0 = no 1 = yes
+  zones[ZONE_ONE].sections[0].leds = zones[ZONE_ONE].leds;
+  zones[ZONE_ONE].sections[0].parent = zones[ZONE_ONE];
 #if MAX_SECTIONS>1
-  zones[ZONE_ONE].sections[1].active = false;
+  zones[ZONE_ONE].sections[1].active = true;
+  zones[ZONE_ONE].sections[1].ledCount = 20;
   zones[ZONE_ONE].sections[1].id = 1;
-  zones[ZONE_ONE].sections[1].start  =    0;           //starting LED for this zone
-  zones[ZONE_ONE].sections[1].endIdx  =      100;         //ending LED for this zone
+  zones[ZONE_ONE].sections[1].start  =    40;           //starting LED for this zone
+  zones[ZONE_ONE].sections[1].endIdx  =      59;         //ending LED for this zone
   zones[ZONE_ONE].sections[1].fireStart  =       1;           //would you like fire to begin from this point? 0 = no 1 = yes
   zones[ZONE_ONE].sections[1].fireEnd  =         1;           //would you like fire to begin from this point? 0 = no 1 = yes
+  zones[ZONE_ONE].sections[1].leds = zones[ZONE_ONE].leds;
+  zones[ZONE_ONE].sections[1].parent = zones[ZONE_ONE];
 #endif
 
 #if MAX_SECTIONS>2
-  zones[ZONE_ONE].sections[2].active = false;
+  zones[ZONE_ONE].sections[2].active = true;
+  zones[ZONE_ONE].sections[2].ledCount = 29;
   zones[ZONE_ONE].sections[2].id = 2;
-  zones[ZONE_ONE].sections[2].start  =    0;           //starting LED for this zone
-  zones[ZONE_ONE].sections[2].endIdx  =      100;         //ending LED for this zone
+  zones[ZONE_ONE].sections[2].start  =   60;           //starting LED for this zone
+  zones[ZONE_ONE].sections[2].endIdx  =      88;         //ending LED for this zone
   zones[ZONE_ONE].sections[2].fireStart  =       1;           //would you like fire to begin from this point? 0 = no 1 = yes
   zones[ZONE_ONE].sections[2].fireEnd  =         1;           //would you like fire to begin from this point? 0 = no 1 = yes
+  zones[ZONE_ONE].sections[2].leds = zones[ZONE_ONE].leds;
+  zones[ZONE_ONE].sections[2].parent = zones[ZONE_ONE];
 #endif
 
 #if MAX_SECTIONS>3
@@ -76,6 +84,8 @@ void setupZonesStats() {
   zones[ZONE_ONE].sections[3].endIdx  =      100;         //ending LED for this zone
   zones[ZONE_ONE].sections[3].fireStart  =       1;           //would you like fire to begin from this point? 0 = no 1 = yes
   zones[ZONE_ONE].sections[3].fireEnd  =         1;           //would you like fire to begin from this point? 0 = no 1 = yes
+  zones[ZONE_ONE].sections[3].leds = zones[ZONE_ONE].leds;
+  zones[ZONE_ONE].sections[3].parent = zones[ZONE_ONE];
 #endif
 
 #if MAX_SECTIONS>4

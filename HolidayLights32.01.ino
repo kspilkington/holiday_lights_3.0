@@ -1,10 +1,10 @@
-/*****************  NEEDED TO MAKE NODEMCU WORK ***************************/
+  /*****************  NEEDED TO MAKE NODEMCU WORK ***************************/
 //#define FASTLED_INTERRUPT_RETRY_COUNT 0
 //#define FASTLED_ALLOW_INTERRUPTS 0
-//#define WIFI_CLIENT_ACTIVATE 
-//#define WIFI_AP_ACTIVATE 
-//#define MQTT_ACTIVATE 
-//#define WEBSERVER 
+//#define WIFI_CLIENT_ACTIVATE
+//#define WIFI_AP_ACTIVATE
+//#define MQTT_ACTIVATE
+//#define WEBSERVER
 
 /******************  LIBRARY SECTION *************************************/
 
@@ -71,7 +71,7 @@ int locatorLED = 0;
 char MQTT_locatorLED[50];
 int locatorDelay = 1000;
 
-CRGB gColors[3] = {CRGB(255,0,0),CRGB(0,255,0),CRGB(0,0,255)};
+CRGB gColors[3] = {CRGB(255, 0, 0), CRGB(0, 255, 0), CRGB(0, 0, 255)};
 CRGB glitterColor = CRGB(255, 255, 255);
 
 //Network variables
@@ -190,9 +190,9 @@ void loop() {
     Serial.println("Reconnecting");
     mqttReconnect();
   }
+  client.loop();
 #endif
 #if defined(WIFI_CLIENT_ACTIVATE) || defined(WIFI_AP_ACTIVATE)
-  //  Serial.println("OTA");
   if (showLights == false && !noWeb)
   {
     ArduinoOTA.handle();
@@ -203,25 +203,39 @@ void loop() {
     handleWeb();
   }
 #endif
-FastLED.show();
-  //  tempLights();
+
+  for (int idx = 0; idx < MAX_ZONE_COUNT; idx++) {
+    if (zones[idx].active) {
+      if (showLights){
+      FastLED[idx].showLeds(brightness);
+      }else {
+        clearLeds(zones[idx]);
+        FastLED.show();
+      }
+    }
+  }
   timer.run();
   EVERY_N_MILLISECONDS( 20 ) {
     gHue++;
   }
-  EVERY_N_MILLISECONDS(100){
-  if (ANIMATION_LEVEL == ZONE_LEVEL) {
-    updateZoneLeds();
-  } else if (ANIMATION_LEVEL == SECTION_LEVEL) {
-    updateSectionLeds();
-  } else {
-    updateZoneLeds();
+  EVERY_N_MILLISECONDS( 100 )
+  {
+    if (showLights) {
+      if (ANIMATION_LEVEL == ZONE_LEVEL) {
+        updateZoneLeds();
+      } else if (ANIMATION_LEVEL == SECTION_LEVEL) {
+        updateSectionLeds();
+      } else {
+        updateZoneLeds();
+      }
+    }else{
+      clearLeds();
+    }
   }
-} 
 
 }
 
-
+//Button Variables
 bool buttonActive = false;
 bool longPress = false;
 long buttonTimer = 0;
@@ -251,8 +265,7 @@ void handleButton() {
 }
 
 void flipLights() {
+  clearLeds();
   showLights = !showLights;
   Serial.println((String)"Setting showLights : " + showLights);
-  Serial.println((String)"Animation :" +getPatternName(zones[0].pattern));
-  clearLeds();
 }
