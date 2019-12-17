@@ -110,6 +110,9 @@ const int Pin_fourthZone = 14; //marked as D5 on the board
 const int Pin_fifthZone = 12; //marked as D6 on the board
 const int Pin_sixthZone = 13; //marked as D7 on the board
 
+String message = "SOS I now have Zendesk"; //max length = 25
+int* morseMessage[100];
+
 
 
 SimpleTimer timer;
@@ -173,6 +176,7 @@ void setup() {
   gPal = HeatColors_p;
 
   timer.setTimeout(10000, chase);
+  buildMorseMessage();
   Serial.println("Done Setup");
 
 }

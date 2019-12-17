@@ -15,6 +15,8 @@ void eyesAnimation(LedStrip& strip);
 void solidAnimation(LedStrip& strip);
 void locatorAnimation(LedStrip& strip);
 void sectionFireAnimation(LedStrip& strip);
+void hiddenMorseCode(LedStrip& strip);
+void buildMorseMessage();
 void addLightning();
 void addGlitter();
 void setupLeds();
@@ -96,6 +98,8 @@ Animation getPattern(String effect) {
     result = RIPPLE;
   } else if (effect == "Fire") {
     result = FIRE;
+  } else if (effect = "Morse"){
+    result = MORSE;
   }
 
   return result;
@@ -141,6 +145,10 @@ String getPatternName(Animation pattern) {
       break;
     case LED_LOCATOR:
       return "LED_Locator";
+      break;
+    case MORSE:
+      return "Morse";
+      break;
     case NONE:
     default:
       return "None";
@@ -201,6 +209,9 @@ Animation nextAnimation() {
       return LED_LOCATOR;
       break;
     case LED_LOCATOR:
+      return MORSE;
+      break;
+    case MORSE:
     default:
       return DOUBLE_CRASH;
   }
@@ -275,6 +286,8 @@ void updateZoneLeds() {
               case BLOCKED_COLORS:
                 blockedAnimation(zones[idx]);
                 break;
+              case MORSE:
+                hiddenMorseCode(zones[idx]);
               case NONE:
               default:
                 clearLeds(zones[idx]);
@@ -891,6 +904,92 @@ void sectionFireAnimation(LedStrip& strip)
   //      }
   //    }
   //  }
+}
+
+const char* morse_codes[36] = {
+  ".-",     // A
+  "-...",   // B
+  "-.-.",   // C
+  "-..",    // D
+  ".",      // E
+  "..-.",   // F
+  "--.",    // G
+  "....",   // H
+  "..",     // I
+  ".---",   // J
+  "-.-",    // K
+  ".-..",   // L
+  "--",     // M
+  "-.",     // N
+  "---",    // O
+  ".--.",   // P
+  "--.-",   // Q
+  ".-.",    // R
+  "...",    // S
+  "-",      // T
+  "..-",    // U
+  "...-",   // V
+  ".--",    // W
+  "-..-",   // X
+  "-.--",   // Y
+  "--..",   // Z
+  "----",   // 0
+  ".----",  // 1
+  "..---",  // 2
+  "...--",  // 3
+  "....-",  // 4
+  ".....",  // 5
+  "-....",  // 6
+  "--...",  // 7
+  "---..",  // 8
+  "----."   // 9
+};
+
+char* getCode(char c){
+
+  const char* code = NULL;
+  if ((c >= 'A') && (c <= 'Z')) {
+    // Get the code for an alphabet character.
+    code = morse_codes[c-'A'];
+  }
+  else if ((c >= '0') && (c <= '9')) {
+    // Get the code for a number.
+    code = morse_codes[c-'0'+26];
+  } else if (c ==' '){
+    code = " ";
+  }
+  return code;
+}
+
+void buildMorseMessage(){
+  morseMessageSize = 0;
+  for (int idx = 0; idx < strlen(message);idx++){
+    const char* code = NULL;
+    char c = toupper(message[i]);
+    code = getCode(c);
+    for (int idy=0;idx< strlen(code);idy++){
+      if (code[idy]==' '){
+        morseMessageSize++;
+        morseMessage[morseMessageSize]=0;
+      }else if (code[idy]=='-'){
+        morseMessageSize++;
+        morseMessage[morseMessageSize]=1;
+      }else if (code[idy]=='.'){
+        morseMessageSize++;
+        morseMessage[morseMessageSize]=2;
+      }
+    }
+  }
+}
+
+void hiddenMorseCode(LedStrip& strip){
+  fill_solid(strip.leds, strip.ledCount, gColors[0]);
+  if (strip.center > (strip.ledCount+strip.start)){
+    strip.center ++;
+  }
+  for (int idx =0;idx<=morseMessageSize && (idx+strip.start) < strip.end;idx++){
+    strip[start+idx]=gColors[morseMessage[idx]];
+  }
 }
 
 

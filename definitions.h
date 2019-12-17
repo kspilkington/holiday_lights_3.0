@@ -22,7 +22,8 @@ enum Animation {
   SPOOKY_EYES,
   SINGLE_RACE,
   BLOCKED_COLORS,
-  LED_LOCATOR
+  LED_LOCATOR,
+  MORSE
 };
 
 
