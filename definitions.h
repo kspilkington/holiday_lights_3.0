@@ -39,7 +39,7 @@ struct LedStrip {
   int endIdx = 0;
   int fireStart = 1;
   int fireEnd = 1;
-  Animation pattern = RIPPLE;
+  Animation pattern = MORSE;
   CRGB* leds = {0};
   int ledCount = 0;
 };

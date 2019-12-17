@@ -55,6 +55,7 @@ void locator_Move()
   timer.setTimeout(locatorDelay, locator_Move);
 }
 
+
 void clearLeds() {
   for (int idx = 0; idx < ZONE_COUNT; idx++)
   {
@@ -98,7 +99,7 @@ Animation getPattern(String effect) {
     result = RIPPLE;
   } else if (effect == "Fire") {
     result = FIRE;
-  } else if (effect = "Morse"){
+  } else if (effect = "Morse") {
     result = MORSE;
   }
 
@@ -245,7 +246,6 @@ void updateZoneLeds() {
       if (zones[idx].active) {
         for (int idy = 0; idy < zones[idx].sectionCount; idy++) {
           if (zones[idx].sections[idy].active) {
-            Serial.println((String)"Zone:"+idx+ "Section:"+idy);
             switch (zones[idx].pattern) {
               case RIPPLE:
                 rippleAnimation(zones[idx].sections[idy]);
@@ -288,6 +288,7 @@ void updateZoneLeds() {
                 break;
               case MORSE:
                 hiddenMorseCode(zones[idx]);
+                break;
               case NONE:
               default:
                 clearLeds(zones[idx]);
@@ -541,11 +542,11 @@ void setupLeds()
 
 void rippleAnimation(LedStrip& strip)
 {
-  Serial.println((String)"Strip ID"+strip.id);
+  Serial.println((String)"Strip ID" + strip.id);
   int ledCount = strip.ledCount;
-  Serial.println((String)"Strip Count"+ledCount);
-  Serial.println((String)"Strip Start"+strip.start);
-  Serial.println((String)"Strip End"+strip.endIdx);
+  Serial.println((String)"Strip Count" + ledCount);
+  Serial.println((String)"Strip Start" + strip.start);
+  Serial.println((String)"Strip End" + strip.endIdx);
   for (int idx = strip.start; idx < strip.endIdx; idx++)
   {
     strip.leds[idx] = CRGB((gColors[2].red / 75), (gColors[2].green / 75), (gColors[2].blue / 75));
@@ -554,23 +555,23 @@ void rippleAnimation(LedStrip& strip)
   {
     case -1:
       strip.center = strip.start + (random16(ledCount) / 2);
-  Serial.println((String)"Strip Center"+strip.center);
+      Serial.println((String)"Strip Center" + strip.center);
       strip.steps = 0;
       break;
     case 0:
-  Serial.println((String)"Strip Center"+strip.center);
+      Serial.println((String)"Strip Center" + strip.center);
       strip.leds[strip.center] = gColors[0];
       strip.steps ++;
       break;
     case 24:
       strip.steps = -1;
       break;
-    default:                         
-                                     // Middle of the ripples.
+    default:
+      // Middle of the ripples.
       int up = ((strip.center + strip.steps + ledCount) % ledCount);
       int down = ((strip.center - strip.steps + ledCount) % ledCount);
-      Serial.println((String)"Strip Upd"+up);
-  Serial.println((String)"Strip Down"+down); 
+      Serial.println((String)"Strip Upd" + up);
+      Serial.println((String)"Strip Down" + down);
       strip.leds[((strip.center + strip.steps + ledCount) % ledCount)] += CRGB((gColors[0].red / (strip.steps * 5)), (gColors[0].green / (strip.steps * 5)), (gColors[0].blue / (strip.steps * 5)));
       strip.leds[((strip.center - strip.steps + ledCount) % ledCount)] += CRGB((gColors[0].red / (strip.steps * 5)), (gColors[0].green / (strip.steps * 5)), (gColors[0].blue / (strip.steps * 5)));
       strip.steps ++;
@@ -945,50 +946,62 @@ const char* morse_codes[36] = {
   "----."   // 9
 };
 
-char* getCode(char c){
+const char* getCode(char c) {
 
   const char* code = NULL;
   if ((c >= 'A') && (c <= 'Z')) {
     // Get the code for an alphabet character.
-    code = morse_codes[c-'A'];
+    code = morse_codes[c - 'A'];
   }
   else if ((c >= '0') && (c <= '9')) {
     // Get the code for a number.
-    code = morse_codes[c-'0'+26];
-  } else if (c ==' '){
+    code = morse_codes[c - '0' + 26];
+  } else if (c == ' ') {
     code = " ";
   }
   return code;
 }
 
-void buildMorseMessage(){
+void buildMorseMessage() {
   morseMessageSize = 0;
-  for (int idx = 0; idx < strlen(message);idx++){
+  for (int idx = 0; idx < message.length(); idx++) {
     const char* code = NULL;
-    char c = toupper(message[i]);
+    char c = toupper(message.charAt(idx));
     code = getCode(c);
-    for (int idy=0;idx< strlen(code);idy++){
-      if (code[idy]==' '){
+    Serial.println(code);
+    for (int idy = 0; idy < strlen(code); idy++) {
+      if (code[idy] == ' ') {
+        morseMessage[morseMessageSize] = 0;
         morseMessageSize++;
-        morseMessage[morseMessageSize]=0;
-      }else if (code[idy]=='-'){
+      } else if (code[idy] == '-') {
+        morseMessage[morseMessageSize] = 1;
         morseMessageSize++;
-        morseMessage[morseMessageSize]=1;
-      }else if (code[idy]=='.'){
+      } else if (code[idy] == '.') {
+        morseMessage[morseMessageSize] = 2;
         morseMessageSize++;
-        morseMessage[morseMessageSize]=2;
       }
     }
   }
 }
 
-void hiddenMorseCode(LedStrip& strip){
-  fill_solid(strip.leds, strip.ledCount, gColors[0]);
-  if (strip.center > (strip.ledCount+strip.start)){
-    strip.center ++;
+int morseTime = 0;
+int morseDelay = 1000;
+void hiddenMorseCode(LedStrip& strip) {
+  fill_rainbow( strip.leds, strip.ledCount, gHue, 1);
+  if (strip.center > (strip.endIdx)) {
+    strip.center = strip.start;
   }
-  for (int idx =0;idx<=morseMessageSize && (idx+strip.start) < strip.end;idx++){
-    strip[start+idx]=gColors[morseMessage[idx]];
+  int index = strip.center;
+  for (int idx = 0; idx <= morseMessageSize; idx++) {
+    if (index > (strip.endIdx)) {
+      index = strip.start;
+    }
+    strip.leds[index] = gColors[morseMessage[idx]];
+    index++;
+  }
+  if (millis() - morseTime > morseDelay){
+    strip.center ++;
+    morseTime = millis();
   }
 }
 

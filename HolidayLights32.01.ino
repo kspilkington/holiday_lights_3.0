@@ -111,7 +111,8 @@ const int Pin_fifthZone = 12; //marked as D6 on the board
 const int Pin_sixthZone = 13; //marked as D7 on the board
 
 String message = "SOS I now have Zendesk"; //max length = 25
-int* morseMessage[100];
+int morseMessage[600];
+int morseMessageSize = 0;
 
 
 
