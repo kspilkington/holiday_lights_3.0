@@ -2,9 +2,9 @@
 //#define FASTLED_INTERRUPT_RETRY_COUNT 0
 //#define FASTLED_ALLOW_INTERRUPTS 0
 //#define WIFI_CLIENT_ACTIVATE
-//#define WIFI_AP_ACTIVATE
+#define WIFI_AP_ACTIVATE
 //#define MQTT_ACTIVATE
-//#define WEBSERVER
+#define WEBSERVER
 
 /******************  LIBRARY SECTION *************************************/
 
