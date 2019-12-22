@@ -29,6 +29,8 @@ enum Animation {
 
 
 
+
+
 struct LedStrip {
   int id=0;
   bool active = false;
@@ -53,3 +55,11 @@ struct Zone : LedStrip {
   int pin;
   Section sections[MAX_SECTIONS];
 };
+
+void loadSettings(){
+  brightness = preferences.getByte("brightness",brightness);
+}
+
+void saveSettings() {
+  
+}

@@ -1,17 +1,31 @@
-void handleRoot();
-void changeColor();
-void getColor();
-void getAnimationWeb();
-void changeAnimationWeb();
+
+void handleIndex();
+void handleNotFound();
+void handleSetPower();
+void handleGetPower();
+void handleSwitchOff();
+void handleGetColour();
+void handleSetColour();
+void handleSetBrightness();
+void handleGetBrightness();
+void handleSelectMode();
+void set_color(byte);
+void light_up_all();
+void turn_off_all();
 void badParam(String param);
+
+#include "webHtml.h"
 
 void setupWeb() {
 
-  webServer.on("/", handleRoot);
-  webServer.on("/web", HTTP_POST, changeAnimationWeb);
-  webServer.on("/web", HTTP_GET, getAnimationWeb);
-  webServer.on("/color", HTTP_POST, changeColor);
-  webServer.on("/color", HTTP_GET, getColor);
+  webServer.on ( "/", handleIndex );
+  webServer.onNotFound ( handleNotFound );
+  
+  webServer.on ( "/togglePower",  handleSetPower);
+  webServer.on ("/power", handleGetPower);
+  webServer.on ( "/colorPicker",handleGetColorPicker);
+  webServer.on ( "/color", HTTP_POST, handleSetColor );
+  webServer.on("/color", handleGetColor);
   webServer.begin();
 }
 
@@ -43,23 +57,49 @@ void handleWeb() {
   }
 }
 
-void handleRoot() {
-  webServer.send(200, "text/html", "");
+void handleIndex(){
+Serial.println ( "Request for index page received" );
+server.send ( 200, "text/html", page_contents);
 }
 
-void changeColor() {
+void handleNotFound() {
+  String message = "File Not Found\n\n";
+  message += "URI: ";
+  message += server.uri();
+  message += "\nMethod: ";
+  message += ( server.method() == HTTP_GET ) ? "GET" : "POST";
+  message += "\nArguments: ";
+  message += server.args();
+  message += "\n";
+
+  for ( uint8_t i = 0; i < server.args(); i++ ) {
+    message += " " + server.argName ( i ) + ": " + server.arg ( i ) + "\n";
+  }
+
+  server.send ( 404, "text/plain", message );
+}
+
+void handleGetColorPicker() {
+Serial.println ( "Request for color picker received" );
+server.send ( 200, "text/html", color_picker);
 
 }
 
-void getColor() {
+void handleSetColor() {
+    String param = webServer.arg("color");
+
+
+}
+
+void handleGetColor() {
     String message="";
     String param = webServer.arg("color");
     if (param ==  "1") {
-      message = (String)""+gColors[0];
+      message = (String)""+gColors[0].red+""+gColors[0].green+""+gColors[0].blue;
     }else if (param ==  "2") {
-      message = (String)""+gColors[1];
+      message = (String)""+gColors[1].red+""+gColors[1].green+""+gColors[1].blue;
     }else if (param ==  "3") {
-      message = (String)""+gColors[2];
+      message = (String)""+gColors[2].red+""+gColors[2].green+""+gColors[2].blue;
     }
     if (message !=""){
       webServer.send(200,"text/plain",message);

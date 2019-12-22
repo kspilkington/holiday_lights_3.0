@@ -2,9 +2,9 @@
 //#define FASTLED_INTERRUPT_RETRY_COUNT 0
 //#define FASTLED_ALLOW_INTERRUPTS 0
 //#define WIFI_CLIENT_ACTIVATE
-#define WIFI_AP_ACTIVATE
+//#define WIFI_AP_ACTIVATE
 //#define MQTT_ACTIVATE
-#define WEBSERVER
+//#define WEBSERVER
 
 /******************  LIBRARY SECTION *************************************/
 
@@ -22,8 +22,9 @@
 #ifdef WEBSERVER
 #include <WebServer.h>
 #endif
+#include <Preferences.h>
 /*******************  User set variables *******************************/
-#include "secrets.h" //Has the various usernnames aand files
+#include "secrets.h" //Has the various usernames and files
 
 #ifndef USER_SSID    //These could be defined in the secrets.h file
 #define USER_SSID                 "default"
@@ -34,6 +35,7 @@
 #define USER_MQTT_PASSWORD        ""
 #define USER_MQTT_CLIENT_NAME     "LightMCU"           // Used to define MQTT topics, MQTT Client ID, and ArduinoOTA
 #endif
+#define EEPROM_SIZE = 10
 
 
 
@@ -91,6 +93,7 @@ boolean wifiApActive = false;
 boolean wifiClientActive = false;
 const boolean WIFI_ACTIVATE_CLIENT = true;
 bool noWeb = false;
+Preferences preferences;
 
 
 //Constants
@@ -110,9 +113,9 @@ const int Pin_fourthZone = 14; //marked as D5 on the board
 const int Pin_fifthZone = 12; //marked as D6 on the board
 const int Pin_sixthZone = 13; //marked as D7 on the board
 
-String message = "SOS I now have Zendesk"; //max length = 25
-int morseMessage[600];
-int morseMessageSize = 0;
+String message = "SOS I now have Zendesk"; //max length = 100
+int* morseMessage[600];
+int morseMessageSize=0;
 
 
 
@@ -175,6 +178,9 @@ void setup() {
   }
 #endif
   gPal = HeatColors_p;
+
+  preferences.begin("LightShow",false);
+  loadSettings();
 
   timer.setTimeout(10000, chase);
   buildMorseMessage();
